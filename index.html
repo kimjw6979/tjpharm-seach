@@ -43,7 +43,7 @@
             font-weight: 800;
             color: #0F172A;
             margin-top: 0;
-            margin-bottom: 0.8rem;
+            margin-bottom: 1rem; /* 간격 살짝 넓힘 */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -53,7 +53,7 @@
         .sub-title {
             color: var(--text-light);
             font-size: 0.95rem;
-            line-height: 1.6;
+            line-height: 1.7; /* 줄 간격을 1.6 -> 1.7로 더 띄움 */
             margin: 0;
             font-weight: 500;
         }
@@ -107,20 +107,18 @@
             box-shadow: none;
         }
         
-        /* 🌟 새로 추가된 경고/안내 박스 스타일 */
         .notice-box {
             background: #FEF2F2;
             border: 1px solid #FECACA;
             color: #B91C1C;
-            padding: 14px 18px;
+            padding: 18px 20px; /* 안쪽 여백(패딩)을 더 넉넉하게 */
             border-radius: 12px;
-            font-size: 0.9rem;
-            margin-top: 1.2rem;
+            font-size: 0.95rem;
+            margin-top: 1.5rem; /* 검색창과의 거리도 살짝 벌림 */
             display: flex;
             align-items: flex-start;
-            gap: 10px;
+            gap: 12px;
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.05);
-            line-height: 1.5;
         }
 
         .autocomplete-list { 
@@ -185,12 +183,15 @@
             <input type="text" id="search-input" class="search-input" placeholder="데이터를 불러오는 중입니다..." disabled autocomplete="off">
         </div>
         
-        <!-- 🌟 여기에 안내 박스가 추가되었습니다! -->
+        <!-- 🌟 문단 사이 간격을 명확하게 띄워 가독성을 높였습니다 -->
         <div class="notice-box">
-            <span style="font-size: 1.2rem;">⚠️</span>
+            <span style="font-size: 1.3rem; margin-top: 2px;">⚠️</span>
             <div>
-                본 검색기는 <strong>'매입처'</strong> 기준으로 담당자가 매칭됩니다.<br>
-                <span style="color: #7F1D1D; font-size: 0.85rem;">일반의약품 검색 시 전문의약품 담당자가 표시될 수 있으므로, <strong>일반약 관련 문의는 전문 담당자에게 삼가주시기 바랍니다.</strong></span>
+                <div style="margin-bottom: 8px;">본 검색기는 <strong>'매입처'</strong> 기준으로 담당자가 매칭됩니다.</div>
+                <div style="color: #7F1D1D; font-size: 0.85rem; line-height: 1.6;">
+                    일반의약품 검색 시 전문의약품 담당자가 표시될 수 있으므로,<br>
+                    <strong>일반약 관련 문의는 전문 담당자에게 삼가주시기 바랍니다.</strong>
+                </div>
             </div>
         </div>
 
