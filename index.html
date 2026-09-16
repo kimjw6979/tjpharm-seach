@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>티제이팜 제약사별 담당자 검색기</title>
+    <title>TJPHARM-SERCH🔍</title>
     
     <!-- 폰트: Pretendard -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
@@ -13,7 +13,6 @@
             --primary: #2563EB; 
             --primary-light: #EFF6FF; 
             --bg: #FFFFFF; 
-            --sec-bg: #F8FAFC; 
             --text: #1E293B; 
             --text-light: #64748B; 
             --border: #E2E8F0;
@@ -22,47 +21,90 @@
 
         body { 
             font-family: 'Pretendard', sans-serif; 
-            background-color: var(--sec-bg); 
+            /* 🌟 배경을 은은한 파란빛 그라데이션으로 변경하여 밋밋함 해소 */
+            background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%); 
             color: var(--text);
             display: flex;
-            justify-content: center;
-            padding-top: 100px; /* 전체 위쪽 여백도 살짝 더 주었습니다 */
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-top: 12vh; /* 화면 비율에 맞춰 적당히 내려오게 설정 */
             margin: 0;
             letter-spacing: -0.01em;
+            box-sizing: border-box;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .main-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0F172A;
+            margin-top: 0;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* 🌟 서브타이틀 스타일 추가 */
+        .sub-title {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 0;
+            font-weight: 500;
         }
 
         .search-container {
             width: 100%;
-            max-width: 500px;
+            max-width: 540px;
             position: relative;
+            padding: 0 20px;
+            box-sizing: border-box;
         }
 
-        /* 변경된 타이틀 스타일 (margin-bottom 늘림) */
-        .main-title {
-            text-align: center;
-            font-size: 1.7rem;
-            font-weight: 800;
-            color: var(--text);
-            margin-top: 0;
-            margin-bottom: 2.5rem; /* 👈 간격을 넉넉하게 띄웠습니다 */
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        /* 🌟 돋보기 아이콘 위치 설정 */
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.3rem;
+            color: #94A3B8;
+            pointer-events: none;
         }
 
         .search-input {
             width: 100%; 
-            padding: 1.2rem 1.5rem; 
-            border: 2px solid var(--primary); 
-            border-radius: 12px; 
-            font-size: 1.2rem; 
+            padding: 1.2rem 1.5rem 1.2rem 3.2rem; /* 왼쪽에 돋보기 공간 확보 */
+            border: 2px solid #DBEAFE; 
+            border-radius: 16px; 
+            font-size: 1.15rem; 
             box-sizing: border-box; 
             background-color: var(--bg); 
-            transition: all 0.2s ease; 
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.1);
+            transition: all 0.3s ease; 
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.1); /* 그림자를 조금 더 깊고 고급스럽게 */
             outline: none;
             font-family: inherit;
         }
 
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
         .search-input:disabled {
-            background-color: #E2E8F0;
+            background-color: #F1F5F9;
             border-color: #CBD5E1;
             cursor: not-allowed;
             box-shadow: none;
@@ -70,9 +112,9 @@
 
         .autocomplete-list { 
             position: absolute; 
-            top: calc(100% + 8px); 
-            left: 0; 
-            right: 0; 
+            top: calc(100% + 12px); 
+            left: 20px; 
+            right: 20px; 
             background: var(--bg); 
             border: 1px solid var(--border); 
             z-index: 1000; 
@@ -88,32 +130,53 @@
 
         .autocomplete-list li { 
             padding: 16px 20px; 
-            cursor: default; 
-            border-bottom: 1px solid var(--border);
-            transition: background 0.1s;
+            cursor: pointer; 
+            border-bottom: 1px dashed var(--border); /* 실선보다 부드러운 점선 적용 */
+            transition: background 0.2s;
         }
         
         .autocomplete-list li:last-child { border-bottom: none; }
         .autocomplete-list li:hover { background-color: var(--primary-light); }
 
-        .prod-name { font-size: 1.15rem; font-weight: 800; color: #0F172A; margin-bottom: 4px; }
-        .prod-meta { font-size: 0.85rem; color: var(--text-light); margin-bottom: 6px; }
-        .prod-info { font-size: 0.95rem; color: var(--primary); font-weight: 700; }
+        .prod-name { font-size: 1.1rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; }
+        .prod-meta { font-size: 0.8rem; color: #94A3B8; margin-bottom: 8px; font-weight: 500; }
+        .prod-info { font-size: 0.9rem; color: var(--primary); font-weight: 700; background: #DBEAFE; display: inline-block; padding: 4px 10px; border-radius: 6px; }
         
+        /* 🌟 화면 하단 워터마크(푸터) 추가 */
+        .footer {
+            margin-top: auto;
+            padding: 2rem;
+            color: #CBD5E1;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg); border-radius: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
     </style>
 </head>
 <body>
 
+    <div class="header-section">
+        <h1 class="main-title">🏢 티제이팜 담당자 검색기</h1>
+        <p class="sub-title">
+            제조사와 실제 유통사가 달라서 헷갈리시나요?<br>
+            <strong style="color: var(--primary);">실제 사내 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
+        </p>
+    </div>
+
     <div class="search-container">
-        <!-- 타이틀 추가 -->
-        <h1 class="main-title">티제이팜 제약사별 담당자 검색기</h1>
-        
-        <input type="text" id="search-input" class="search-input" placeholder="데이터를 불러오는 중입니다..." disabled autocomplete="off">
+        <div class="input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="데이터를 불러오는 중입니다..." disabled autocomplete="off">
+        </div>
         <ul id="search-list" class="autocomplete-list"></ul>
+    </div>
+
+    <div class="footer">
+        TJPHARM Integrated System
     </div>
 
     <script>
@@ -132,7 +195,6 @@
         // 서버 데이터 로딩
         async function loadData() {
             try {
-                // 기존 API 엔드포인트 그대로 활용
                 const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll'); 
                 const data = await res.json();
                 
@@ -141,7 +203,7 @@
                 managersData = data.managers || []; 
 
                 const input = document.getElementById('search-input');
-                input.placeholder = "제품명 또는 코드를 입력하세요 (예: 듀락칸)";
+                input.placeholder = "제품명 또는 코드 입력 (예: 듀락칸)";
                 input.disabled = false;
                 input.focus();
             } catch (e) {
@@ -168,7 +230,7 @@
                 if (!item || !item.standardCode || String(item.standardCode).trim() === "") return false;
                 const combinedStr = `${item.name} ${item.code} ${item.spec}`.toLowerCase();
                 return searchTerms.every(term => combinedStr.includes(term));
-            }).slice(0, 50); // 최대 50개만 표시
+            }).slice(0, 50);
 
             if (matches.length > 0) {
                 matches.forEach(item => {
@@ -176,16 +238,20 @@
                     if (item.seller) { 
                         const dCode = formatCode3(item.seller); 
                         
-                        // 제약사(매입처) 찾기
                         const sup = suppliersData.find(s => formatCode3(s.code) === dCode); 
                         sName = sup ? cleanCompanyName(sup.name) : `미등록(${dCode})`; 
                         
-                        // 담당자 찾기
                         const mgr = managersData.find(m => formatCode3(m.code) === dCode); 
                         mName = mgr ? mgr.name : `미등록(${dCode})`; 
                     } 
 
                     const li = document.createElement('li');
+                    // 검색 결과 목록 클릭 시 텍스트 복사 및 초기화 기능 추가 (선택사항)
+                    li.onclick = function() {
+                        document.getElementById('search-input').value = item.name;
+                        list.style.display = 'none';
+                    };
+
                     li.innerHTML = `
                         <div class="prod-name">${item.name}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
