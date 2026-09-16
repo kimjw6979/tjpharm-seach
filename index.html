@@ -21,14 +21,13 @@
 
         body { 
             font-family: 'Pretendard', sans-serif; 
-            /* 🌟 배경을 은은한 파란빛 그라데이션으로 변경하여 밋밋함 해소 */
             background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%); 
             color: var(--text);
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding-top: 12vh; /* 화면 비율에 맞춰 적당히 내려오게 설정 */
+            padding-top: 12vh; 
             margin: 0;
             letter-spacing: -0.01em;
             box-sizing: border-box;
@@ -51,7 +50,6 @@
             gap: 8px;
         }
 
-        /* 🌟 서브타이틀 스타일 추가 */
         .sub-title {
             color: var(--text-light);
             font-size: 0.95rem;
@@ -73,7 +71,6 @@
             width: 100%;
         }
 
-        /* 🌟 돋보기 아이콘 위치 설정 */
         .search-icon {
             position: absolute;
             left: 20px;
@@ -86,14 +83,14 @@
 
         .search-input {
             width: 100%; 
-            padding: 1.2rem 1.5rem 1.2rem 3.2rem; /* 왼쪽에 돋보기 공간 확보 */
+            padding: 1.2rem 1.5rem 1.2rem 3.2rem; 
             border: 2px solid #DBEAFE; 
             border-radius: 16px; 
             font-size: 1.15rem; 
             box-sizing: border-box; 
             background-color: var(--bg); 
             transition: all 0.3s ease; 
-            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.1); /* 그림자를 조금 더 깊고 고급스럽게 */
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.1); 
             outline: none;
             font-family: inherit;
         }
@@ -108,6 +105,22 @@
             border-color: #CBD5E1;
             cursor: not-allowed;
             box-shadow: none;
+        }
+        
+        /* 🌟 새로 추가된 경고/안내 박스 스타일 */
+        .notice-box {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #B91C1C;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-top: 1.2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.05);
+            line-height: 1.5;
         }
 
         .autocomplete-list { 
@@ -131,7 +144,7 @@
         .autocomplete-list li { 
             padding: 16px 20px; 
             cursor: pointer; 
-            border-bottom: 1px dashed var(--border); /* 실선보다 부드러운 점선 적용 */
+            border-bottom: 1px dashed var(--border); 
             transition: background 0.2s;
         }
         
@@ -142,7 +155,6 @@
         .prod-meta { font-size: 0.8rem; color: #94A3B8; margin-bottom: 8px; font-weight: 500; }
         .prod-info { font-size: 0.9rem; color: var(--primary); font-weight: 700; background: #DBEAFE; display: inline-block; padding: 4px 10px; border-radius: 6px; }
         
-        /* 🌟 화면 하단 워터마크(푸터) 추가 */
         .footer {
             margin-top: auto;
             padding: 2rem;
@@ -172,6 +184,16 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="search-input" class="search-input" placeholder="데이터를 불러오는 중입니다..." disabled autocomplete="off">
         </div>
+        
+        <!-- 🌟 여기에 안내 박스가 추가되었습니다! -->
+        <div class="notice-box">
+            <span style="font-size: 1.2rem;">⚠️</span>
+            <div>
+                본 검색기는 <strong>'매입처'</strong> 기준으로 담당자가 매칭됩니다.<br>
+                <span style="color: #7F1D1D; font-size: 0.85rem;">일반의약품 검색 시 전문의약품 담당자가 표시될 수 있으므로, <strong>일반약 관련 문의는 전문 담당자에게 삼가주시기 바랍니다.</strong></span>
+            </div>
+        </div>
+
         <ul id="search-list" class="autocomplete-list"></ul>
     </div>
 
@@ -184,7 +206,6 @@
         let suppliersData = []; 
         let managersData = []; 
 
-        // 유틸리티 함수
         function formatCode3(code) { 
             return code && /^\d+$/.test(code.trim()) ? code.trim().padStart(3, '0') : (code || ""); 
         }
@@ -192,7 +213,6 @@
             return name ? name.replace(/\(주\)/g, '').replace(/\(유\)/g, '').replace(/주식회사/g, '').trim() : ""; 
         }
 
-        // 서버 데이터 로딩
         async function loadData() {
             try {
                 const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll'); 
@@ -212,7 +232,6 @@
             }
         }
 
-        // 검색 로직
         document.getElementById('search-input').addEventListener('input', function() {
             const val = this.value.trim().toLowerCase().replace(/\^/g, ' '); 
             const list = document.getElementById('search-list');
@@ -225,7 +244,6 @@
 
             const searchTerms = val.split(/\s+/).filter(t => t.length > 0); 
 
-            // 표준코드가 있는 정상 제품 중 일치하는 항목 찾기
             const matches = productsData.filter(item => {
                 if (!item || !item.standardCode || String(item.standardCode).trim() === "") return false;
                 const combinedStr = `${item.name} ${item.code} ${item.spec}`.toLowerCase();
@@ -246,7 +264,6 @@
                     } 
 
                     const li = document.createElement('li');
-                    // 검색 결과 목록 클릭 시 텍스트 복사 및 초기화 기능 추가 (선택사항)
                     li.onclick = function() {
                         document.getElementById('search-input').value = item.name;
                         list.style.display = 'none';
@@ -265,7 +282,6 @@
             }
         });
 
-        // 바탕 클릭 시 드롭다운 닫기
         document.addEventListener('click', function(e) {
             const input = document.getElementById('search-input');
             const list = document.getElementById('search-list');
@@ -274,7 +290,6 @@
             }
         });
 
-        // 시작 시 데이터 로딩 실행
         window.addEventListener('load', loadData);
     </script>
 </body>
