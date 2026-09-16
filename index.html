@@ -122,7 +122,6 @@
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.05);
         }
 
-        /* 🌟 드롭다운을 검색창 영역 안으로 종속시키고 넓이를 딱 맞췄습니다 */
         .autocomplete-list { 
             position: absolute; 
             top: calc(100% + 8px); 
@@ -134,7 +133,7 @@
             max-height: 400px; 
             overflow-y: auto; 
             display: none; 
-            box-shadow: var(--shadow-xl); /* 그림자를 더 진하게 해서 붕 떠보이게 만듦 */
+            box-shadow: var(--shadow-xl); 
             padding: 0; 
             margin: 0; 
             list-style: none; 
@@ -175,7 +174,7 @@
         <h1 class="main-title">🏢 TJ 제약사 담당자 찾기</h1>
         <p class="sub-title">
             제조사와 실제 유통사가 달라서 헷갈리시나요?<br>
-            <strong style="color: var(--primary);">실제 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
+            <strong style="color: var(--primary);">실제 사내 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
         </p>
     </div>
 
@@ -184,7 +183,6 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="search-input" class="search-input" placeholder="데이터를 불러오는 중입니다..." disabled autocomplete="off">
             
-            <!-- 🌟 드롭다운 리스트(<ul id="search-list">)를 이 위치로 올렸습니다! -->
             <ul id="search-list" class="autocomplete-list"></ul>
         </div>
         
@@ -247,10 +245,19 @@
 
             const searchTerms = val.split(/\s+/).filter(t => t.length > 0); 
 
+            // 🌟 이 부분이 핵심입니다! (코드 앞자리 일치 로직 적용)
             const matches = productsData.filter(item => {
                 if (!item || !item.standardCode || String(item.standardCode).trim() === "") return false;
-                const combinedStr = `${item.name} ${item.code} ${item.spec}`.toLowerCase();
-                return searchTerms.every(term => combinedStr.includes(term));
+                
+                const code = String(item.code || '').toLowerCase();
+                const name = String(item.name || '').toLowerCase();
+                const spec = String(item.spec || '').toLowerCase();
+
+                return searchTerms.every(term => 
+                    code.startsWith(term) || // 👈 코드는 무조건 앞자리부터 일치해야 함!
+                    name.includes(term) ||   // 제품명은 중간 단어 검색 가능
+                    spec.includes(term)      // 규격도 중간 단어 검색 가능
+                );
             }).slice(0, 50);
 
             if (matches.length > 0) {
