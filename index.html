@@ -17,6 +17,7 @@
             --text-light: #64748B; 
             --border: #E2E8F0;
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.1);
         }
 
         body { 
@@ -43,7 +44,7 @@
             font-weight: 800;
             color: #0F172A;
             margin-top: 0;
-            margin-bottom: 1rem; /* 간격 살짝 넓힘 */
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -53,7 +54,7 @@
         .sub-title {
             color: var(--text-light);
             font-size: 0.95rem;
-            line-height: 1.7; /* 줄 간격을 1.6 -> 1.7로 더 띄움 */
+            line-height: 1.7;
             margin: 0;
             font-weight: 500;
         }
@@ -111,28 +112,29 @@
             background: #FEF2F2;
             border: 1px solid #FECACA;
             color: #B91C1C;
-            padding: 18px 20px; /* 안쪽 여백(패딩)을 더 넉넉하게 */
+            padding: 18px 20px;
             border-radius: 12px;
             font-size: 0.95rem;
-            margin-top: 1.5rem; /* 검색창과의 거리도 살짝 벌림 */
+            margin-top: 1.5rem;
             display: flex;
             align-items: flex-start;
             gap: 12px;
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.05);
         }
 
+        /* 🌟 드롭다운을 검색창 영역 안으로 종속시키고 넓이를 딱 맞췄습니다 */
         .autocomplete-list { 
             position: absolute; 
-            top: calc(100% + 12px); 
-            left: 20px; 
-            right: 20px; 
+            top: calc(100% + 8px); 
+            left: 0; 
+            right: 0; 
             background: var(--bg); 
             border: 1px solid var(--border); 
             z-index: 1000; 
             max-height: 400px; 
             overflow-y: auto; 
             display: none; 
-            box-shadow: var(--shadow-lg); 
+            box-shadow: var(--shadow-xl); /* 그림자를 더 진하게 해서 붕 떠보이게 만듦 */
             padding: 0; 
             margin: 0; 
             list-style: none; 
@@ -170,10 +172,10 @@
 <body>
 
     <div class="header-section">
-        <h1 class="main-title">🏢티제이팜 담당자 검색기 </h1>
+        <h1 class="main-title">🏢 티제이팜 담당자 검색기</h1>
         <p class="sub-title">
             제조사와 실제 유통사가 달라서 헷갈리시나요?<br>
-            <strong style="color: var(--primary);">실제 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
+            <strong style="color: var(--primary);">실제 사내 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
         </p>
     </div>
 
@@ -181,9 +183,11 @@
         <div class="input-wrapper">
             <span class="search-icon">🔍</span>
             <input type="text" id="search-input" class="search-input" placeholder="데이터를 불러오는 중입니다..." disabled autocomplete="off">
+            
+            <!-- 🌟 드롭다운 리스트(<ul id="search-list">)를 이 위치로 올렸습니다! -->
+            <ul id="search-list" class="autocomplete-list"></ul>
         </div>
         
-        <!-- 🌟 문단 사이 간격을 명확하게 띄워 가독성을 높였습니다 -->
         <div class="notice-box">
             <span style="font-size: 1.3rem; margin-top: 2px;">⚠️</span>
             <div>
@@ -194,8 +198,6 @@
                 </div>
             </div>
         </div>
-
-        <ul id="search-list" class="autocomplete-list"></ul>
     </div>
 
     <div class="footer">
