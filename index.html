@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TJPHARM-SERCH🔍</title>
+    <title>티제이팜 제약사별 담당자 검색기</title>
     
     <!-- 폰트: Pretendard -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
@@ -152,7 +152,7 @@
 
         .prod-name { font-size: 1.1rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; }
         .prod-meta { font-size: 0.8rem; color: #94A3B8; margin-bottom: 8px; font-weight: 500; }
-        .prod-info { font-size: 0.9rem; color: var(--primary); font-weight: 700; background: #DBEAFE; display: inline-block; padding: 4px 10px; border-radius: 6px; }
+        .prod-info { font-size: 0.9rem; color: var(--primary); font-weight: 700; background: #DBEAFE; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px; }
         
         .footer {
             margin-top: auto;
@@ -171,10 +171,10 @@
 <body>
 
     <div class="header-section">
-        <h1 class="main-title">🏢 TJ 제약사 담당자 찾기</h1>
+        <h1 class="main-title">🏢 티제이팜 담당자 검색기</h1>
         <p class="sub-title">
             제조사와 실제 유통사가 달라서 헷갈리시나요?<br>
-            <strong style="color: var(--primary);">실제 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
+            <strong style="color: var(--primary);">실제 사내 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
         </p>
     </div>
 
@@ -182,7 +182,6 @@
         <div class="input-wrapper">
             <span class="search-icon">🔍</span>
             <input type="text" id="search-input" class="search-input" placeholder="데이터를 불러오는 중입니다..." disabled autocomplete="off">
-            
             <ul id="search-list" class="autocomplete-list"></ul>
         </div>
         
@@ -245,7 +244,6 @@
 
             const searchTerms = val.split(/\s+/).filter(t => t.length > 0); 
 
-            // 🌟 이 부분이 핵심입니다! (코드 앞자리 일치 로직 적용)
             const matches = productsData.filter(item => {
                 if (!item || !item.standardCode || String(item.standardCode).trim() === "") return false;
                 
@@ -254,15 +252,17 @@
                 const spec = String(item.spec || '').toLowerCase();
 
                 return searchTerms.every(term => 
-                    code.startsWith(term) || // 👈 코드는 무조건 앞자리부터 일치해야 함!
-                    name.includes(term) ||   // 제품명은 중간 단어 검색 가능
-                    spec.includes(term)      // 규격도 중간 단어 검색 가능
+                    code.startsWith(term) ||
+                    name.includes(term) ||
+                    spec.includes(term)
                 );
             }).slice(0, 50);
 
             if (matches.length > 0) {
                 matches.forEach(item => {
-                    let sName = "-"; let mName = "-"; 
+                    let sName = "-"; 
+                    let mNameHtml = "👨‍💼 -"; 
+
                     if (item.seller) { 
                         const dCode = formatCode3(item.seller); 
                         
@@ -270,11 +270,28 @@
                         sName = sup ? cleanCompanyName(sup.name) : `미등록(${dCode})`; 
                         
                         const mgr = managersData.find(m => formatCode3(m.code) === dCode); 
-                        mName = mgr ? mgr.name : `미등록(${dCode})`; 
+                        if (mgr) {
+                            // 🌟 이름 안에 괄호가 있는지 확인하고, 있으면 팀즈 링크로 변환합니다.
+                            const match = mgr.name.match(/(.+)\((.+)\)/);
+                            if (match) {
+                                const nameOnly = match[1].trim(); 
+                                const email = match[2].trim(); 
+                                // 팀즈 채팅 딥링크 적용 (버튼 형태)
+                                mNameHtml = `<a href="https://teams.microsoft.com/l/chat/0/0?users=${email}" target="_blank" style="color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:white; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">👨‍💼 ${nameOnly} 💬</a>`;
+                            } else {
+                                // 괄호가 없으면 일반 텍스트로 표시
+                                mNameHtml = `👨‍💼 ${mgr.name}`;
+                            }
+                        } else {
+                            mNameHtml = `👨‍💼 미등록(${dCode})`;
+                        }
                     } 
 
                     const li = document.createElement('li');
-                    li.onclick = function() {
+                    li.onclick = function(e) {
+                        // 🌟 팀즈 링크(버튼)를 클릭했을 때는 드롭다운이 닫히지 않고 바로 넘어가도록 처리
+                        if (e.target.closest('a')) return;
+                        
                         document.getElementById('search-input').value = item.name;
                         list.style.display = 'none';
                     };
@@ -282,7 +299,7 @@
                     li.innerHTML = `
                         <div class="prod-name">${item.name}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
-                        <div class="prod-info">🏢 ${sName} &nbsp;|&nbsp; 👨‍💼 ${mName}</div>
+                        <div class="prod-info">🏢 ${sName} &nbsp;|&nbsp; ${mNameHtml}</div>
                     `;
                     list.appendChild(li);
                 });
