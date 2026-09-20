@@ -170,11 +170,17 @@
 </head>
 <body>
 
-    <div class="notice-box">
-            <!-- 💡 flex-shrink: 0; 을 추가해 모바일에서 아이콘이 찌그러지는 것을 방지합니다 -->
+    <div class="search-container">
+        <!-- 1. 검색창 구역 -->
+        <div class="input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="데이터를 불러오는 중입니다..." disabled autocomplete="off">
+            <ul id="search-list" class="autocomplete-list"></ul>
+        </div>
+        
+        <!-- 2. 모바일 최적화된 안내 문구 (검색창 바로 아래에 딱 1개만!) -->
+        <div class="notice-box">
             <span style="font-size: 1.3rem; margin-top: 2px; flex-shrink: 0;">⚠️</span>
-            
-            <!-- 💡 word-break: keep-all; 을 추가해 단어가 중간에 잘리지 않게 방어합니다 -->
             <div style="word-break: keep-all;">
                 <div style="margin-bottom: 8px; line-height: 1.5;">
                     본 검색기는 <strong>'매입처'</strong> 기준으로<br>담당자가 매칭됩니다.
@@ -185,6 +191,7 @@
                 </div>
             </div>
         </div>
+    </div>
 
     <div class="search-container">
         <div class="input-wrapper">
