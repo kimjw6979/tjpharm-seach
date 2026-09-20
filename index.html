@@ -244,7 +244,8 @@
 
             const searchTerms = val.split(/\s+/).filter(t => t.length > 0); 
 
-            const matches = productsData.filter(item => {
+            // 1. 기존 필터링 (const를 let으로 변경하고 .slice는 잠시 뺍니다)
+            let matches = productsData.filter(item => {
                 if (!item || !item.standardCode || String(item.standardCode).trim() === "") return false;
                 
                 const code = String(item.code || '').toLowerCase();
@@ -256,7 +257,34 @@
                     name.includes(term) ||
                     spec.includes(term)
                 );
-            }).slice(0, 50);
+            });
+
+            // 🌟 2. [신규 추가] 검색어가 이름 앞부분에 있을수록 상단에 배치되도록 정렬
+            if (searchTerms.length > 0) {
+                const primaryTerm = searchTerms[0];
+                matches.sort((a, b) => {
+                    const nameA = String(a.name || '').toLowerCase();
+                    const nameB = String(b.name || '').toLowerCase();
+                    
+                    const idxA = nameA.indexOf(primaryTerm);
+                    const idxB = nameB.indexOf(primaryTerm);
+
+                    // 둘 다 이름에 검색어가 포함된 경우
+                    if (idxA !== -1 && idxB !== -1) {
+                        // 검색어 위치가 더 앞쪽인 것을 최상단으로 (예: '이모튼'은 0번, '바이모'는 1번)
+                        if (idxA !== idxB) return idxA - idxB; 
+                        // 위치가 같다면 글자 길이가 더 짧은 것을 우선
+                        return nameA.length - nameB.length;    
+                    }
+                    // 이름이 아니라 코드나 성분에만 일치한 경우는 뒤로 밀림
+                    if (idxA !== -1) return -1;
+                    if (idxB !== -1) return 1;
+                    return 0;
+                });
+            }
+
+            // 3. 정렬이 끝난 후 상위 50개만 잘라서 화면에 표시
+            matches = matches.slice(0, 50);
 
             if (matches.length > 0) {
                 matches.forEach(item => {
