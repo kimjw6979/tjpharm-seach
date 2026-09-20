@@ -215,7 +215,13 @@
 
         async function loadData() {
             try {
-                const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll'); 
+                // 🌟 주소 뒤에 헤더(headers)로 API 키를 같이 보냅니다!
+const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll', {
+    method: 'GET',
+    headers: {
+        'X-API-Key': 'TJPHARM-SECRET-2024' // 서버에 설정한 암호와 똑같이 적어줍니다.
+    }
+});
                 const data = await res.json();
                 
                 productsData = data.products || []; 
