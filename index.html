@@ -212,6 +212,33 @@
         let productsData = []; 
         let suppliersData = []; 
         let managersData = []; 
+        // 👇 1. 품절 데이터를 담을 변수 추가
+        let outOfStockData = []; 
+        let entries = []; 
+
+        // 👇 2. 품절 판독기 로직 추가
+        const isTrue = (val) => val === 1 || val === true || val === 'true';
+
+        function getOOSInfo(pCode) {
+            if (!pCode) return null;
+            const targetCode = String(pCode).trim().padStart(6, '0');
+
+            // 수기 입력 품절 확인
+            const manualOos = entries.find(e => e.boardType === 'oos' && String(e.pCode).trim().padStart(6, '0') === targetCode && !isTrue(e.del));
+            if (manualOos) {
+                return { status: manualOos.vCode || "품절", schedule: manualOos.vName || "미정", remark: manualOos.regReason || "" };
+            }
+
+            // 엑셀 업로드 품절 확인
+            const isDeletedExcel = entries.find(e => e.boardType === 'oos_del' && String(e.pCode).trim().padStart(6, '0') === targetCode && isTrue(e.del));
+            if (!isDeletedExcel) {
+                const excelOos = outOfStockData.find(o => String(o.code).trim().padStart(6, '0') === targetCode);
+                if (excelOos) {
+                    return { status: excelOos.status || "품절", schedule: excelOos.schedule || "미정", remark: excelOos.remark || "" };
+                }
+            }
+            return null;
+        }
 
         function formatCode3(code) { 
             return code && /^\d+$/.test(code.trim()) ? code.trim().padStart(3, '0') : (code || ""); 
@@ -231,6 +258,9 @@
                 productsData = data.products || []; 
                 suppliersData = data.suppliers || []; 
                 managersData = data.managers || []; 
+                // 👇 품절 데이터 받아오기 추가
+                outOfStockData = data.outofstock || [];
+                entries = data.entries || [];
 
                 const input = document.getElementById('search-input');
                 input.placeholder = "제품명 또는 코드 입력 (예: 듀락칸)";
@@ -325,6 +355,22 @@
                         }
                     } 
 
+                    // 👇 [핵심] 품절 스캐너 가동 및 뱃지 생성
+                    const oos = getOOSInfo(item.code);
+                    let oosBadgeTitle = "";
+                    let oosBottomInfo = "";
+
+                    if (oos) {
+                        const rawStatus = (oos.status || "품절").trim();
+                        if (rawStatus.includes("중단")) {
+                            oosBadgeTitle = `<span style="color:#64748B;">[⚫ 중단]</span> `;
+                            oosBottomInfo = `<div style="margin-top: 12px; font-size: 0.85rem; color: #64748B; font-weight: 600;">🚫 판매중단 | 해지일정: ${oos.schedule || '해당없음'} ${oos.remark ? `| ${oos.remark}` : ''}</div>`;
+                        } else {
+                            oosBadgeTitle = `<span style="color:#DC2626;">[🔴 품절]</span> `;
+                            oosBottomInfo = `<div style="margin-top: 12px; font-size: 0.85rem; color: #DC2626; font-weight: 600;">🚨 품절 | 해지일정: ${oos.schedule || '미정'} ${oos.remark ? `| ${oos.remark}` : ''}</div>`;
+                        }
+                    }
+
                     const li = document.createElement('li');
                     li.onclick = function(e) {
                         // 🌟 팀즈 링크(버튼)를 클릭했을 때는 드롭다운이 닫히지 않고 바로 넘어가도록 처리
@@ -334,10 +380,12 @@
                         list.style.display = 'none';
                     };
 
+                    // 👇 HTML 렌더링 영역에 품절 변수 삽입!
                     li.innerHTML = `
-                        <div class="prod-name">${item.name}</div>
+                        <div class="prod-name">${oosBadgeTitle}${item.name}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
                         <div class="prod-info">🏢 ${sName} &nbsp;|&nbsp; ${mNameHtml}</div>
+                        ${oosBottomInfo}
                     `;
                     list.appendChild(li);
                 });
