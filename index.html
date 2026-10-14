@@ -167,6 +167,17 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        /* 🌟 검색기 전용 공문 보기 버튼 스타일 */
+        .notice-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #FFFBEB; color: #D97706; border: 1px solid #F59E0B;
+            padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+            cursor: pointer; text-decoration: none; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-left: 8px; vertical-align: middle;
+        }
+        .notice-btn:hover { background: #FEF3C7; transform: translateY(-1px); }
+    
     </style>
 </head>
 <body>
@@ -215,6 +226,7 @@
         // 👇 1. 품절 데이터를 담을 변수 추가
         let outOfStockData = []; 
         let entries = []; 
+        let noticeEntries = []; // 👈 [추가] 제약사 공문 데이터 배열
 
         // 👇 2. 품절 판독기 로직 추가
         const isTrue = (val) => val === 1 || val === true || val === 'true';
@@ -261,6 +273,8 @@
                 // 👇 품절 데이터 받아오기 추가
                 outOfStockData = data.outofstock || [];
                 entries = data.entries || [];
+                // 🌟 [추가] 삭제되지 않은 정상 공문만 쏙 골라담기
+                noticeEntries = (data.entries || []).filter(e => e.boardType === 'notice' && !isTrue(e.del));
 
                 const input = document.getElementById('search-input');
                 input.placeholder = "제품명 또는 코드 입력 (예: 듀락칸)";
@@ -371,6 +385,14 @@
                         }
                     }
 
+                    // 🌟 [추가] 공문 스캐너 및 버튼 생성
+                    const targetCode = String(item.code).trim().padStart(6, '0');
+                    const matchedNotice = noticeEntries.find(n => String(n.pCode).trim().padStart(6, '0') === targetCode);
+                    let noticeBtnHtml = "";
+                    if (matchedNotice && matchedNotice.content) {
+                        noticeBtnHtml = `<button class="notice-btn" onclick="openNoticeSearchPopup('${matchedNotice.id}')">📄 공문보기</button>`;
+                    }
+
                     const li = document.createElement('li');
                     li.onclick = function(e) {
                         // 🌟 팀즈 링크(버튼)를 클릭했을 때는 드롭다운이 닫히지 않고 바로 넘어가도록 처리
@@ -382,7 +404,7 @@
 
                     // 👇 HTML 렌더링 영역에 품절 변수 삽입!
                     li.innerHTML = `
-                        <div class="prod-name">${oosBadgeTitle}${item.name}</div>
+                        <div class="prod-name">${oosBadgeTitle}${item.name} ${noticeBtnHtml}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
                         <div class="prod-info">🏢 ${sName} &nbsp;|&nbsp; ${mNameHtml}</div>
                         ${oosBottomInfo}
@@ -404,6 +426,33 @@
         });
 
         window.addEventListener('load', loadData);
+    </script>
+    <!-- 🌟 담당자 검색기 전용 공문 이미지 확대 팝업 모달 -->
+    <div id="notice-search-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px);" onclick="closeNoticeSearchPopup()">
+        <div style="background:white; padding:20px; border-radius:16px; max-width:90%; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative; box-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);" onclick="event.stopPropagation()">
+            <button onclick="closeNoticeSearchPopup()" style="position:absolute; top:10px; right:10px; width:auto; padding:4px 12px; background:#CBD5E1; color:white; border-radius:6px; font-weight:bold; border:none; cursor:pointer;">닫기 ✖</button>
+            <h3 id="notice-modal-title" style="margin:0 0 15px 0; font-size:1.1rem; color:#1E293B;">📢 제약사 공문 내용</h3>
+            <div style="overflow:auto; max-width:100%; max-height:75vh; display:flex; justify-content:center;">
+                <img id="notice-modal-img" src="" style="max-width:100%; height:auto; object-fit:contain; border-radius:8px; border:1px solid #E2E8F0;">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.openNoticeSearchPopup = function(id) {
+            const notice = noticeEntries.find(n => String(n.id) === String(id));
+            if (notice && notice.content) {
+                document.getElementById('notice-modal-title').innerText = `📢 [${notice.vCode || '공문'}] ${notice.vName || '제약사 공문'}`;
+                document.getElementById('notice-modal-img').src = notice.content;
+                document.getElementById('notice-search-modal').style.display = 'flex';
+            } else {
+                alert("첨부된 공문 이미지가 없습니다.");
+            }
+        };
+
+        window.closeNoticeSearchPopup = function() {
+            document.getElementById('notice-search-modal').style.display = 'none';
+        };
     </script>
 </body>
 </html>
