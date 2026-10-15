@@ -385,9 +385,14 @@
                         }
                     }
 
-                    // 🌟 [추가] 공문 스캐너 및 버튼 생성
+                    // 🌟 [추가] 공문 스캐너 및 버튼 생성 (다중 규격 코드 동시 인식)
                     const targetCode = String(item.code).trim().padStart(6, '0');
-                    const matchedNotice = noticeEntries.find(n => String(n.pCode).trim().padStart(6, '0') === targetCode);
+                    const matchedNotice = noticeEntries.find(n => {
+                        // 서버에 215625,215519 처럼 저장되어 있으면 쉼표로 쪼개서 배열로 만듭니다.
+                        const codes = (n.pCode || '').split(',').map(c => c.trim().padStart(6, '0'));
+                        // 지금 검색된 약품의 코드(targetCode)가 저 배열 안에 하나라도 들어있으면 공문 버튼을 띄웁니다!
+                        return codes.includes(targetCode);
+                    });
                     let noticeBtnHtml = "";
                     if (matchedNotice && matchedNotice.content) {
                         noticeBtnHtml = `<button class="notice-btn" onclick="openNoticeSearchPopup('${matchedNotice.id}')">📄 공문보기</button>`;
