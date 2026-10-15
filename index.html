@@ -393,9 +393,22 @@
                         // 지금 검색된 약품의 코드(targetCode)가 저 배열 안에 하나라도 들어있으면 공문 버튼을 띄웁니다!
                         return codes.includes(targetCode);
                     });
+                    
                     let noticeBtnHtml = "";
                     if (matchedNotice && matchedNotice.content) {
-                        noticeBtnHtml = `<button class="notice-btn" onclick="openNoticeSearchPopup('${matchedNotice.id}')">📄 공문보기</button>`;
+                        // 🌟 어제 추가했던 '구분별 이름(품절, 성상 등)' 자동 표시 로직 유지!
+                        let shortType = "보기"; 
+                        const typeStr = matchedNotice.vCode || "";
+                        
+                        if (typeStr.includes('품절')) shortType = "품절";
+                        else if (typeStr.includes('중단')) shortType = "중단";
+                        else if (typeStr.includes('성상') && typeStr.includes('포장')) shortType = "성상·포장";
+                        else if (typeStr.includes('성상') && typeStr.includes('규격')) shortType = "성상·규격";
+                        else if (typeStr.includes('성상')) shortType = "성상";
+                        else if (typeStr.includes('포장')) shortType = "포장";
+                        else if (typeStr.includes('규격')) shortType = "규격";
+                        
+                        noticeBtnHtml = `<button class="notice-btn" onclick="openNoticeSearchPopup('${matchedNotice.id}')">📄 공문(${shortType})</button>`;
                     }
 
                     const li = document.createElement('li');
