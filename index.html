@@ -177,7 +177,7 @@
         }
         .notice-btn:hover { background: #FEF3C7; transform: translateY(-1px); }
 
-        /* 🌟 [추가] 검색기 전용 제약사회수 버튼 스타일 */
+        /* 🌟 검색기 전용 제약사회수 버튼 스타일 */
         .recall-btn {
             display: inline-flex; align-items: center; gap: 4px;
             background: #FFF1F2; color: #E11D48; border: 1px solid #F43F5E;
@@ -186,7 +186,6 @@
             margin-left: 6px; vertical-align: middle;
         }
         .recall-btn:hover { background: #FFE4E6; transform: translateY(-1px); }
-    
     </style>
 </head>
 <body>
@@ -197,7 +196,6 @@
             제조사와 실제 유통사가 달라서 헷갈리시나요?<br>
             <strong style="color: var(--primary);">실제 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
         </p>
-        <!-- 👇 스마트폰에서도 깔끔하게 보이도록 줄바꿈 및 스타일 최적화 👇 -->
         <div style="margin-top: 12px; padding: 0 10px;">
             <div style="display: inline-block; font-size: 0.85rem; color: #1D4ED8; background-color: #DBEAFE; padding: 8px 16px; border-radius: 12px; font-weight: 700; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1); line-height: 1.5; word-break: keep-all;">
                 💡 검색된 [👨‍💼 이름 💬] 버튼을 누르면<br>팀즈 1:1 채팅이 열립니다!
@@ -228,14 +226,38 @@
         TJPHARM SEARCH SYSTEM
     </div>
 
+    <!-- 🌟 담당자 검색기 전용 공문 & 회수 통합 확대 팝업 모달 -->
+    <div id="notice-search-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px);" onclick="closeNoticeSearchPopup()">
+        <div style="background:white; padding:24px; border-radius:16px; width:90%; max-width:720px; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative; box-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25); overflow-y:auto; box-sizing:border-box;" onclick="event.stopPropagation()">
+            <button onclick="closeNoticeSearchPopup()" style="position:absolute; top:12px; right:12px; width:auto; padding:6px 14px; background:#CBD5E1; color:white; border-radius:6px; font-weight:bold; border:none; cursor:pointer;">닫기 ✖</button>
+            <h3 id="notice-modal-title" style="margin:0 0 15px 0; font-size:1.15rem; color:#1E293B; width:100%; text-align:left; padding-right:70px; box-sizing:border-box;">📢 제약사 공문 내용</h3>
+            
+            <!-- 🌟 회수 공문 클릭 시에만 나타나는 상단 요약 텍스트 박스 -->
+            <div id="notice-modal-body" style="display:none; background:#FFF1F2; padding:16px 18px; border-radius:12px; border:1px solid #FECDD3; font-size:0.92rem; line-height:1.75; color:#1E293B; margin-bottom:16px; width:100%; box-sizing:border-box; text-align:left;"></div>
+
+            <div style="overflow:auto; max-width:100%; max-height:70vh; display:flex; justify-content:center; width:100%;">
+                <!-- 🌟 [추가] cursor:zoom-in; 와 onclick 이벤트 추가 -->
+                <img id="notice-modal-img" src="" style="max-width:100%; height:auto; object-fit:contain; border-radius:8px; border:1px solid #E2E8F0; cursor:zoom-in;" onclick="openImageZoomPopup(this.src)" title="클릭하면 이미지가 원본 크기로 확대됩니다">
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌟 [추가] 이미지 클릭 시 원본 크기로 꽉 차게 보여주는 확대 모달 🌟 -->
+    <div id="image-zoom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999999; align-items:center; justify-content:center; backdrop-filter:blur(5px); padding:20px; box-sizing:border-box;" onclick="closeImageZoomPopup()">
+        <button onclick="closeImageZoomPopup()" style="position:absolute; top:20px; right:20px; width:auto; padding:8px 16px; background:#CBD5E1; color:#1E293B; border-radius:8px; font-weight:800; font-size:1rem; border:none; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3); z-index:1000000;">닫기 ✖</button>
+        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:auto;">
+            <img id="image-zoom-img" src="" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:4px; box-shadow:0 0 20px rgba(0,0,0,0.5); cursor:zoom-out;" onclick="event.stopPropagation(); closeImageZoomPopup();">
+        </div>
+    </div>
+
     <script>
         let productsData = []; 
         let suppliersData = []; 
         let managersData = []; 
         let outOfStockData = []; 
         let entries = []; 
-        let noticeEntries = []; // 제약사 공문 데이터 배열
-        let recallEntries = []; // 🌟 [추가] 제약사 회수 데이터 배열
+        let noticeEntries = []; 
+        let recallEntries = []; 
 
         const isTrue = (val) => val === 1 || val === true || val === 'true';
 
@@ -243,13 +265,11 @@
             if (!pCode) return null;
             const targetCode = String(pCode).trim().padStart(6, '0');
 
-            // 수기 입력 품절 확인
             const manualOos = entries.find(e => e.boardType === 'oos' && String(e.pCode).trim().padStart(6, '0') === targetCode && !isTrue(e.del));
             if (manualOos) {
                 return { status: manualOos.vCode || "품절", schedule: manualOos.vName || "미정", remark: manualOos.regReason || "" };
             }
 
-            // 엑셀 업로드 품절 확인
             const isDeletedExcel = entries.find(e => e.boardType === 'oos_del' && String(e.pCode).trim().padStart(6, '0') === targetCode && isTrue(e.del));
             if (!isDeletedExcel) {
                 const excelOos = outOfStockData.find(o => String(o.code).trim().padStart(6, '0') === targetCode);
@@ -278,7 +298,6 @@
                 outOfStockData = data.outofstock || [];
                 entries = data.entries || [];
                 
-                // 삭제되지 않은 정상 공문 및 회수 내역 골라담기
                 noticeEntries = (data.entries || []).filter(e => e.boardType === 'notice' && !isTrue(e.del));
                 recallEntries = (data.entries || []).filter(e => e.boardType === 'recall' && !isTrue(e.del));
 
@@ -318,7 +337,6 @@
                 );
             });
 
-            // 검색어가 이름 앞부분에 있을수록 상단에 배치되도록 정렬
             if (searchTerms.length > 0) {
                 const primaryTerm = searchTerms[0];
                 matches.sort((a, b) => {
@@ -366,7 +384,6 @@
                         }
                     } 
 
-                    // 품절 스캐너 가동 및 뱃지 생성
                     const oos = getOOSInfo(item.code);
                     let oosBadgeTitle = "";
                     let oosBottomInfo = "";
@@ -382,7 +399,6 @@
                         }
                     }
 
-                    // 1. 일반 제약사공문 스캐너 및 버튼 생성 (다중 규격 코드 동시 인식)
                     const targetCode = String(item.code).trim().padStart(6, '0');
                     const matchedNotice = noticeEntries.find(n => {
                         const codes = (n.pCode || '').split(',').map(c => c.trim().padStart(6, '0'));
@@ -405,7 +421,6 @@
                         noticeBtnHtml = `<button class="notice-btn" onclick="openNoticeSearchPopup('${matchedNotice.id}')">📄 공문(${shortType})</button>`;
                     }
 
-                    // 🌟 2. [신규 추가] 제약사회수 스캐너 및 버튼/하단 요약줄 생성 (다중 규격 코드 동시 인식)
                     const matchedRecall = recallEntries.find(r => {
                         const codes = (r.pCode || '').split(',').map(c => c.trim().padStart(6, '0'));
                         return codes.includes(targetCode);
@@ -420,14 +435,12 @@
 
                     const li = document.createElement('li');
                     li.onclick = function(e) {
-                        // 팀즈 링크(a)나 공문/회수 버튼(button)을 클릭했을 때는 검색창이 닫히지 않고 팝업만 열리도록 처리
                         if (e.target.closest('a') || e.target.closest('button')) return;
                         
                         document.getElementById('search-input').value = item.name;
                         list.style.display = 'none';
                     };
 
-                    // HTML 렌더링 영역에 공문/회수 버튼 및 하단 안내문 삽입
                     li.innerHTML = `
                         <div class="prod-name">${oosBadgeTitle}${item.name} ${noticeBtnHtml}${recallBtnHtml}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
@@ -452,25 +465,7 @@
         });
 
         window.addEventListener('load', loadData);
-    </script>
 
-    <!-- 🌟 담당자 검색기 전용 공문 & 회수 통합 확대 팝업 모달 -->
-    <div id="notice-search-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px);" onclick="closeNoticeSearchPopup()">
-        <div style="background:white; padding:24px; border-radius:16px; width:90%; max-width:720px; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative; box-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25); overflow-y:auto; box-sizing:border-box;" onclick="event.stopPropagation()">
-            <button onclick="closeNoticeSearchPopup()" style="position:absolute; top:12px; right:12px; width:auto; padding:6px 14px; background:#CBD5E1; color:white; border-radius:6px; font-weight:bold; border:none; cursor:pointer;">닫기 ✖</button>
-            <h3 id="notice-modal-title" style="margin:0 0 15px 0; font-size:1.15rem; color:#1E293B; width:100%; text-align:left; padding-right:70px; box-sizing:border-box;">📢 제약사 공문 내용</h3>
-            
-            <!-- 🌟 회수 공문 클릭 시에만 나타나는 상단 요약 텍스트 박스 -->
-            <div id="notice-modal-body" style="display:none; background:#FFF1F2; padding:16px 18px; border-radius:12px; border:1px solid #FECDD3; font-size:0.92rem; line-height:1.75; color:#1E293B; margin-bottom:16px; width:100%; box-sizing:border-box; text-align:left;"></div>
-
-            <div style="overflow:auto; max-width:100%; max-height:70vh; display:flex; justify-content:center; width:100%;">
-                <!-- 🌟 [추가] cursor:zoom-in; 와 onclick 이벤트 추가 -->
-                <img id="notice-modal-img" src="" style="max-width:100%; height:auto; object-fit:contain; border-radius:8px; border:1px solid #E2E8F0; cursor:zoom-in;" onclick="openImageZoomPopup(this.src)" title="클릭하면 이미지가 원본 크기로 확대됩니다">
-            </div>
-        </div>
-    </div>
-
-    <script>
         // 1. 일반 제약사공문 팝업 열기
         window.openNoticeSearchPopup = function(id) {
             const notice = noticeEntries.find(n => String(n.id) === String(id));
@@ -487,7 +482,7 @@
             }
         };
 
-        // 🌟 2. [신규 추가] 제약사회수 팝업 열기 (요약 텍스트 + 하단 공문 이미지)
+        // 2. 제약사회수 팝업 열기
         window.openRecallSearchPopup = function(id) {
             const item = recallEntries.find(r => String(r.id) === String(id));
             if (!item) return;
@@ -525,26 +520,19 @@
             document.getElementById('notice-search-modal').style.display = 'flex';
         };
 
+        // 공문 팝업 닫기
         window.closeNoticeSearchPopup = function() {
             document.getElementById('notice-search-modal').style.display = 'none';
         };
-    <!-- 🌟 [추가] 이미지 클릭 시 원본 크기로 꽉 차게 보여주는 확대 모달 🌟 -->
-    <div id="image-zoom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999999; align-items:center; justify-content:center; backdrop-filter:blur(5px); padding:20px; box-sizing:border-box;" onclick="closeImageZoomPopup()">
-        <button onclick="closeImageZoomPopup()" style="position:absolute; top:20px; right:20px; width:auto; padding:8px 16px; background:#CBD5E1; color:#1E293B; border-radius:8px; font-weight:800; font-size:1rem; border:none; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3); z-index:1000000;">닫기 ✖</button>
-        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:auto;">
-            <img id="image-zoom-img" src="" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:4px; box-shadow:0 0 20px rgba(0,0,0,0.5); cursor:zoom-out;" onclick="event.stopPropagation(); closeImageZoomPopup();">
-        </div>
-    </div>
 
-    <script>
-        // 이미지 확대 팝업 열기
+        // 이미지 원본 돋보기 팝업 열기
         window.openImageZoomPopup = function(src) {
             if (!src) return;
             document.getElementById('image-zoom-img').src = src;
             document.getElementById('image-zoom-modal').style.display = 'flex';
         };
 
-        // 이미지 확대 팝업 닫기
+        // 이미지 원본 돋보기 팝업 닫기
         window.closeImageZoomPopup = function() {
             document.getElementById('image-zoom-modal').style.display = 'none';
         };
