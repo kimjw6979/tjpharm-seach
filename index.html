@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -177,6 +176,16 @@
             margin-left: 8px; vertical-align: middle;
         }
         .notice-btn:hover { background: #FEF3C7; transform: translateY(-1px); }
+
+        /* 🌟 [추가] 검색기 전용 제약사회수 버튼 스타일 */
+        .recall-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #FFF1F2; color: #E11D48; border: 1px solid #F43F5E;
+            padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+            cursor: pointer; text-decoration: none; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-left: 6px; vertical-align: middle;
+        }
+        .recall-btn:hover { background: #FFE4E6; transform: translateY(-1px); }
     
     </style>
 </head>
@@ -223,12 +232,11 @@
         let productsData = []; 
         let suppliersData = []; 
         let managersData = []; 
-        // 👇 1. 품절 데이터를 담을 변수 추가
         let outOfStockData = []; 
         let entries = []; 
-        let noticeEntries = []; // 👈 [추가] 제약사 공문 데이터 배열
+        let noticeEntries = []; // 제약사 공문 데이터 배열
+        let recallEntries = []; // 🌟 [추가] 제약사 회수 데이터 배열
 
-        // 👇 2. 품절 판독기 로직 추가
         const isTrue = (val) => val === 1 || val === true || val === 'true';
 
         function getOOSInfo(pCode) {
@@ -260,21 +268,19 @@
         }
 
         async function loadData() {
-    try {
-        // 🌟 헤더와 암호를 모두 지우고 주소만 깔끔하게 남깁니다.
-        const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll');
-        
-        const data = await res.json();
-        // ... (아래 코드는 기존과 동일하게 유지) ...
+            try {
+                const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll');
+                const data = await res.json();
                 
                 productsData = data.products || []; 
                 suppliersData = data.suppliers || []; 
                 managersData = data.managers || []; 
-                // 👇 품절 데이터 받아오기 추가
                 outOfStockData = data.outofstock || [];
                 entries = data.entries || [];
-                // 🌟 [추가] 삭제되지 않은 정상 공문만 쏙 골라담기
+                
+                // 삭제되지 않은 정상 공문 및 회수 내역 골라담기
                 noticeEntries = (data.entries || []).filter(e => e.boardType === 'notice' && !isTrue(e.del));
+                recallEntries = (data.entries || []).filter(e => e.boardType === 'recall' && !isTrue(e.del));
 
                 const input = document.getElementById('search-input');
                 input.placeholder = "제품명 또는 코드 입력 (예: 듀락칸)";
@@ -298,7 +304,6 @@
 
             const searchTerms = val.split(/\s+/).filter(t => t.length > 0); 
 
-            // 1. 기존 필터링 (const를 let으로 변경하고 .slice는 잠시 뺍니다)
             let matches = productsData.filter(item => {
                 if (!item || !item.standardCode || String(item.standardCode).trim() === "") return false;
                 
@@ -313,7 +318,7 @@
                 );
             });
 
-            // 🌟 2. [신규 추가] 검색어가 이름 앞부분에 있을수록 상단에 배치되도록 정렬
+            // 검색어가 이름 앞부분에 있을수록 상단에 배치되도록 정렬
             if (searchTerms.length > 0) {
                 const primaryTerm = searchTerms[0];
                 matches.sort((a, b) => {
@@ -323,21 +328,16 @@
                     const idxA = nameA.indexOf(primaryTerm);
                     const idxB = nameB.indexOf(primaryTerm);
 
-                    // 둘 다 이름에 검색어가 포함된 경우
                     if (idxA !== -1 && idxB !== -1) {
-                        // 검색어 위치가 더 앞쪽인 것을 최상단으로 (예: '이모튼'은 0번, '바이모'는 1번)
                         if (idxA !== idxB) return idxA - idxB; 
-                        // 위치가 같다면 글자 길이가 더 짧은 것을 우선
                         return nameA.length - nameB.length;    
                     }
-                    // 이름이 아니라 코드나 성분에만 일치한 경우는 뒤로 밀림
                     if (idxA !== -1) return -1;
                     if (idxB !== -1) return 1;
                     return 0;
                 });
             }
 
-            // 3. 정렬이 끝난 후 상위 50개만 잘라서 화면에 표시
             matches = matches.slice(0, 50);
 
             if (matches.length > 0) {
@@ -353,15 +353,12 @@
                         
                         const mgr = managersData.find(m => formatCode3(m.code) === dCode); 
                         if (mgr) {
-                            // 🌟 이름 안에 괄호가 있는지 확인하고, 있으면 팀즈 링크로 변환합니다.
                             const match = mgr.name.match(/(.+)\((.+)\)/);
                             if (match) {
                                 const nameOnly = match[1].trim(); 
                                 const email = match[2].trim(); 
-                                // 팀즈 채팅 딥링크 적용 (버튼 형태)
                                 mNameHtml = `<a href="https://teams.microsoft.com/l/chat/0/0?users=${email}" target="_blank" style="color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:white; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">👨‍💼 ${nameOnly} 💬</a>`;
                             } else {
-                                // 괄호가 없으면 일반 텍스트로 표시
                                 mNameHtml = `👨‍💼 ${mgr.name}`;
                             }
                         } else {
@@ -369,7 +366,7 @@
                         }
                     } 
 
-                    // 👇 [핵심] 품절 스캐너 가동 및 뱃지 생성
+                    // 품절 스캐너 가동 및 뱃지 생성
                     const oos = getOOSInfo(item.code);
                     let oosBadgeTitle = "";
                     let oosBottomInfo = "";
@@ -385,18 +382,15 @@
                         }
                     }
 
-                    // 🌟 [추가] 공문 스캐너 및 버튼 생성 (다중 규격 코드 동시 인식)
+                    // 1. 일반 제약사공문 스캐너 및 버튼 생성 (다중 규격 코드 동시 인식)
                     const targetCode = String(item.code).trim().padStart(6, '0');
                     const matchedNotice = noticeEntries.find(n => {
-                        // 서버에 215625,215519 처럼 저장되어 있으면 쉼표로 쪼개서 배열로 만듭니다.
                         const codes = (n.pCode || '').split(',').map(c => c.trim().padStart(6, '0'));
-                        // 지금 검색된 약품의 코드(targetCode)가 저 배열 안에 하나라도 들어있으면 공문 버튼을 띄웁니다!
                         return codes.includes(targetCode);
                     });
                     
                     let noticeBtnHtml = "";
                     if (matchedNotice && matchedNotice.content) {
-                        // 🌟 어제 추가했던 '구분별 이름(품절, 성상 등)' 자동 표시 로직 유지!
                         let shortType = "보기"; 
                         const typeStr = matchedNotice.vCode || "";
                         
@@ -411,21 +405,35 @@
                         noticeBtnHtml = `<button class="notice-btn" onclick="openNoticeSearchPopup('${matchedNotice.id}')">📄 공문(${shortType})</button>`;
                     }
 
+                    // 🌟 2. [신규 추가] 제약사회수 스캐너 및 버튼/하단 요약줄 생성 (다중 규격 코드 동시 인식)
+                    const matchedRecall = recallEntries.find(r => {
+                        const codes = (r.pCode || '').split(',').map(c => c.trim().padStart(6, '0'));
+                        return codes.includes(targetCode);
+                    });
+
+                    let recallBtnHtml = "";
+                    let recallBottomInfo = "";
+                    if (matchedRecall) {
+                        recallBtnHtml = `<button class="recall-btn" onclick="openRecallSearchPopup('${matchedRecall.id}')">🚨 회수공문</button>`;
+                        recallBottomInfo = `<div style="margin-top: 8px; font-size: 0.85rem; color: #E11D48; font-weight: 700;">🔄 회수진행 | 제조번호: ${matchedRecall.vCode || '하단 공문 참조'} | 종료일: ${matchedRecall.vName || '-'}</div>`;
+                    }
+
                     const li = document.createElement('li');
                     li.onclick = function(e) {
-                        // 🌟 팀즈 링크(버튼)를 클릭했을 때는 드롭다운이 닫히지 않고 바로 넘어가도록 처리
-                        if (e.target.closest('a')) return;
+                        // 팀즈 링크(a)나 공문/회수 버튼(button)을 클릭했을 때는 검색창이 닫히지 않고 팝업만 열리도록 처리
+                        if (e.target.closest('a') || e.target.closest('button')) return;
                         
                         document.getElementById('search-input').value = item.name;
                         list.style.display = 'none';
                     };
 
-                    // 👇 HTML 렌더링 영역에 품절 변수 삽입!
+                    // HTML 렌더링 영역에 공문/회수 버튼 및 하단 안내문 삽입
                     li.innerHTML = `
-                        <div class="prod-name">${oosBadgeTitle}${item.name} ${noticeBtnHtml}</div>
+                        <div class="prod-name">${oosBadgeTitle}${item.name} ${noticeBtnHtml}${recallBtnHtml}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
                         <div class="prod-info">🏢 ${sName} &nbsp;|&nbsp; ${mNameHtml}</div>
                         ${oosBottomInfo}
+                        ${recallBottomInfo}
                     `;
                     list.appendChild(li);
                 });
@@ -445,27 +453,75 @@
 
         window.addEventListener('load', loadData);
     </script>
-    <!-- 🌟 담당자 검색기 전용 공문 이미지 확대 팝업 모달 -->
+
+    <!-- 🌟 담당자 검색기 전용 공문 & 회수 통합 확대 팝업 모달 -->
     <div id="notice-search-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px);" onclick="closeNoticeSearchPopup()">
-        <div style="background:white; padding:20px; border-radius:16px; max-width:90%; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative; box-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);" onclick="event.stopPropagation()">
-            <button onclick="closeNoticeSearchPopup()" style="position:absolute; top:10px; right:10px; width:auto; padding:4px 12px; background:#CBD5E1; color:white; border-radius:6px; font-weight:bold; border:none; cursor:pointer;">닫기 ✖</button>
-            <h3 id="notice-modal-title" style="margin:0 0 15px 0; font-size:1.1rem; color:#1E293B;">📢 제약사 공문 내용</h3>
-            <div style="overflow:auto; max-width:100%; max-height:75vh; display:flex; justify-content:center;">
+        <div style="background:white; padding:24px; border-radius:16px; width:90%; max-width:720px; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative; box-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25); overflow-y:auto; box-sizing:border-box;" onclick="event.stopPropagation()">
+            <button onclick="closeNoticeSearchPopup()" style="position:absolute; top:12px; right:12px; width:auto; padding:6px 14px; background:#CBD5E1; color:white; border-radius:6px; font-weight:bold; border:none; cursor:pointer;">닫기 ✖</button>
+            <h3 id="notice-modal-title" style="margin:0 0 15px 0; font-size:1.15rem; color:#1E293B; width:100%; text-align:left; padding-right:70px; box-sizing:border-box;">📢 제약사 공문 내용</h3>
+            
+            <!-- 🌟 회수 공문 클릭 시에만 나타나는 상단 요약 텍스트 박스 -->
+            <div id="notice-modal-body" style="display:none; background:#FFF1F2; padding:16px 18px; border-radius:12px; border:1px solid #FECDD3; font-size:0.92rem; line-height:1.75; color:#1E293B; margin-bottom:16px; width:100%; box-sizing:border-box; text-align:left;"></div>
+
+            <div style="overflow:auto; max-width:100%; max-height:70vh; display:flex; justify-content:center; width:100%;">
                 <img id="notice-modal-img" src="" style="max-width:100%; height:auto; object-fit:contain; border-radius:8px; border:1px solid #E2E8F0;">
             </div>
         </div>
     </div>
 
     <script>
+        // 1. 일반 제약사공문 팝업 열기
         window.openNoticeSearchPopup = function(id) {
             const notice = noticeEntries.find(n => String(n.id) === String(id));
             if (notice && notice.content) {
                 document.getElementById('notice-modal-title').innerText = `📢 [${notice.vCode || '공문'}] ${notice.vName || '제약사 공문'}`;
-                document.getElementById('notice-modal-img').src = notice.content;
+                document.getElementById('notice-modal-body').style.display = 'none';
+                
+                const imgEl = document.getElementById('notice-modal-img');
+                imgEl.src = notice.content;
+                imgEl.style.display = 'block';
                 document.getElementById('notice-search-modal').style.display = 'flex';
             } else {
                 alert("첨부된 공문 이미지가 없습니다.");
             }
+        };
+
+        // 🌟 2. [신규 추가] 제약사회수 팝업 열기 (요약 텍스트 + 하단 공문 이미지)
+        window.openRecallSearchPopup = function(id) {
+            const item = recallEntries.find(r => String(r.id) === String(id));
+            if (!item) return;
+
+            const sup = item.supplierName && item.supplierName !== '-' ? item.supplierName : '';
+            const fullProd = `${item.pName || ''} ${item.pSpec && item.pSpec !== '-' ? item.pSpec : ''}`.trim();
+            const lot = item.vCode || '하단 공문 참조';
+            const reason = item.regReason || '-';
+            const endDate = item.vName || '-';
+
+            document.getElementById('notice-modal-title').innerText = `🚨 [회수] ${sup} ${fullProd} 특정 제조번호 회수 건`;
+
+            const bodyEl = document.getElementById('notice-modal-body');
+            bodyEl.style.display = 'block';
+            bodyEl.innerHTML = `
+                <div><b>제약사 :</b> ${sup || '-'}</div>
+                <div><b>제품명 :</b> ${fullProd}</div>
+                <div><b>해당 제조번호 :</b> ${lot}</div>
+                <div><b>회수사유 :</b> <span style="color:#E11D48; font-weight:700;">${reason}</span></div>
+                <div><b>회수 시 요청사항 :</b> 회수처(약국 등) 상호인이 날인 된 회수확인서</div>
+                <div><b>회수 시 유의사항 :</b> 특정제조번호 확인 및 해당제품 별도 반품요청</div>
+                <div><b>회수종료일자 :</b> <strong style="color:#0F172A; text-decoration:underline;">${endDate}</strong> / 도착분에 한함.(이후 처리불가 할 수 있음)</div>
+                <div style="margin-top:8px; font-weight:700; color:#475569;">## 관련부서의 적극적인 협조 부탁드립니다.</div>
+            `;
+
+            const imgEl = document.getElementById('notice-modal-img');
+            if (item.content && item.content.startsWith('data:image')) {
+                imgEl.src = item.content;
+                imgEl.style.display = 'block';
+            } else {
+                imgEl.src = '';
+                imgEl.style.display = 'none';
+            }
+
+            document.getElementById('notice-search-modal').style.display = 'flex';
         };
 
         window.closeNoticeSearchPopup = function() {
