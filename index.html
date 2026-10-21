@@ -226,7 +226,7 @@
         TJPHARM SEARCH SYSTEM
     </div>
 
-    <!-- 🌟 담당자 검색기 전용 공문 & 회수 통합 확대 팝업 모달 -->
+    <!-- 🌟 담당자 검색기 전용 공문 & 회수 통합 팝업 모달 -->
     <div id="notice-search-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px);" onclick="closeNoticeSearchPopup()">
         <div style="background:white; padding:24px; border-radius:16px; width:90%; max-width:720px; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative; box-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25); overflow-y:auto; box-sizing:border-box;" onclick="event.stopPropagation()">
             <button onclick="closeNoticeSearchPopup()" style="position:absolute; top:12px; right:12px; width:auto; padding:6px 14px; background:#CBD5E1; color:white; border-radius:6px; font-weight:bold; border:none; cursor:pointer;">닫기 ✖</button>
@@ -235,18 +235,29 @@
             <!-- 🌟 회수 공문 클릭 시에만 나타나는 상단 요약 텍스트 박스 -->
             <div id="notice-modal-body" style="display:none; background:#FFF1F2; padding:16px 18px; border-radius:12px; border:1px solid #FECDD3; font-size:0.92rem; line-height:1.75; color:#1E293B; margin-bottom:16px; width:100%; box-sizing:border-box; text-align:left;"></div>
 
-            <div style="overflow:auto; max-width:100%; max-height:70vh; display:flex; justify-content:center; width:100%;">
-                <!-- 🌟 [추가] cursor:zoom-in; 와 onclick 이벤트 추가 -->
-                <img id="notice-modal-img" src="" style="max-width:100%; height:auto; object-fit:contain; border-radius:8px; border:1px solid #E2E8F0; cursor:zoom-in;" onclick="openImageZoomPopup(this.src)" title="클릭하면 이미지가 원본 크기로 확대됩니다">
+            <div id="notice-img-guide" style="font-size:0.8rem; color:#2563EB; font-weight:700; margin-bottom:8px; background:#EFF6FF; padding:6px 12px; border-radius:6px; width:100%; box-sizing:border-box; text-align:center;">
+                🔍 아래 공문 이미지를 클릭하면 글씨가 잘 보이도록 크게 확대됩니다!
+            </div>
+
+            <div style="overflow:auto; max-width:100%; max-height:65vh; display:flex; justify-content:center; width:100%;">
+                <img id="notice-modal-img" src="" style="max-width:100%; height:auto; object-fit:contain; border-radius:8px; border:1px solid #E2E8F0; cursor:zoom-in;" onclick="openImageZoomPopup(this.src)" title="클릭하면 이미지가 원본 크기로 크게 확대됩니다">
             </div>
         </div>
     </div>
 
-    <!-- 🌟 [추가] 이미지 클릭 시 원본 크기로 꽉 차게 보여주는 확대 모달 🌟 -->
-    <div id="image-zoom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999999; align-items:center; justify-content:center; backdrop-filter:blur(5px); padding:20px; box-sizing:border-box;" onclick="closeImageZoomPopup()">
-        <button onclick="closeImageZoomPopup()" style="position:absolute; top:20px; right:20px; width:auto; padding:8px 16px; background:#CBD5E1; color:#1E293B; border-radius:8px; font-weight:800; font-size:1rem; border:none; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3); z-index:1000000;">닫기 ✖</button>
-        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:auto;">
-            <img id="image-zoom-img" src="" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:4px; box-shadow:0 0 20px rgba(0,0,0,0.5); cursor:zoom-out;" onclick="event.stopPropagation(); closeImageZoomPopup();">
+    <!-- 🌟 [핵심 수정] 세로 압축 없이 큼지막하게 확대되고 스크롤/배율 조절이 가능한 돋보기 모달 🌟 -->
+    <div id="image-zoom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:999999; overflow:auto; text-align:center; box-sizing:border-box;" onclick="closeImageZoomPopup()">
+        
+        <!-- 상단 고정 컨트롤 바 (확대/축소/닫기) -->
+        <div style="position:fixed; top:16px; right:20px; display:flex; gap:8px; z-index:1000001;" onclick="event.stopPropagation()">
+            <button onclick="changeZoomSize(-200)" style="width:auto; padding:8px 14px; background:#1E293B; color:white; border:1px solid #475569; border-radius:8px; font-weight:800; font-size:0.95rem; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3);">🔍- 축소</button>
+            <button onclick="changeZoomSize(200)" style="width:auto; padding:8px 14px; background:#2563EB; color:white; border:none; border-radius:8px; font-weight:800; font-size:0.95rem; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3);">🔍+ 더 크게</button>
+            <button onclick="closeImageZoomPopup()" style="width:auto; padding:8px 16px; background:#CBD5E1; color:#1E293B; border-radius:8px; font-weight:800; font-size:0.95rem; border:none; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3);">닫기 ✖</button>
+        </div>
+
+        <!-- 이미지가 쪼그라들지 않도록 기본 1000px 너비로 큼지막하게 표시 -->
+        <div style="padding: 70px 20px 40px 20px; display: inline-block;">
+            <img id="image-zoom-img" src="" style="width:1000px; max-width:none; height:auto; border-radius:8px; box-shadow:0 0 25px rgba(0,0,0,0.6); cursor:zoom-out; background:white;" onclick="event.stopPropagation(); closeImageZoomPopup();" title="클릭하면 확대 창을 닫습니다">
         </div>
     </div>
 
@@ -258,6 +269,7 @@
         let entries = []; 
         let noticeEntries = []; 
         let recallEntries = []; 
+        let currentZoomWidth = 1000;
 
         const isTrue = (val) => val === 1 || val === true || val === 'true';
 
@@ -472,6 +484,7 @@
             if (notice && notice.content) {
                 document.getElementById('notice-modal-title').innerText = `📢 [${notice.vCode || '공문'}] ${notice.vName || '제약사 공문'}`;
                 document.getElementById('notice-modal-body').style.display = 'none';
+                document.getElementById('notice-img-guide').style.display = 'block';
                 
                 const imgEl = document.getElementById('notice-modal-img');
                 imgEl.src = notice.content;
@@ -509,12 +522,15 @@
             `;
 
             const imgEl = document.getElementById('notice-modal-img');
+            const guideEl = document.getElementById('notice-img-guide');
             if (item.content && item.content.startsWith('data:image')) {
                 imgEl.src = item.content;
                 imgEl.style.display = 'block';
+                guideEl.style.display = 'block';
             } else {
                 imgEl.src = '';
                 imgEl.style.display = 'none';
+                guideEl.style.display = 'none';
             }
 
             document.getElementById('notice-search-modal').style.display = 'flex';
@@ -525,11 +541,20 @@
             document.getElementById('notice-search-modal').style.display = 'none';
         };
 
-        // 이미지 원본 돋보기 팝업 열기
+        // 이미지 원본 돋보기 팝업 열기 (기본 1000px로 큼직하게 오픈)
         window.openImageZoomPopup = function(src) {
             if (!src) return;
-            document.getElementById('image-zoom-img').src = src;
-            document.getElementById('image-zoom-modal').style.display = 'flex';
+            currentZoomWidth = 1000;
+            const zoomImg = document.getElementById('image-zoom-img');
+            zoomImg.src = src;
+            zoomImg.style.width = currentZoomWidth + 'px';
+            document.getElementById('image-zoom-modal').style.display = 'block';
+        };
+
+        // 확대/축소 버튼 조절 함수
+        window.changeZoomSize = function(delta) {
+            currentZoomWidth = Math.max(500, Math.min(2400, currentZoomWidth + delta));
+            document.getElementById('image-zoom-img').style.width = currentZoomWidth + 'px';
         };
 
         // 이미지 원본 돋보기 팝업 닫기
