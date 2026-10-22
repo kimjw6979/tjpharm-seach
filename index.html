@@ -186,6 +186,16 @@
             margin-left: 6px; vertical-align: middle;
         }
         .recall-btn:hover { background: #FFE4E6; transform: translateY(-1px); }
+
+        /* 🌟 [추가] 검색기 전용 의약품 성상보기 버튼 스타일 */
+        .drug-info-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #F5F3FF; color: #6D28D9; border: 1px solid #C4B5FD;
+            padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+            cursor: pointer; text-decoration: none; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-left: 6px; vertical-align: middle;
+        }
+        .drug-info-btn:hover { background: #EDE9FE; transform: translateY(-1px); }
     </style>
 </head>
 <body>
@@ -453,8 +463,10 @@
                         list.style.display = 'none';
                     };
 
+                    const drugInfoBtnHtml = `<button class="drug-info-btn" onclick="openDrugInfoPopup('${item.code}')">💊 성상보기</button>`;
+
                     li.innerHTML = `
-                        <div class="prod-name">${oosBadgeTitle}${item.name} ${noticeBtnHtml}${recallBtnHtml}</div>
+                        <div class="prod-name">${oosBadgeTitle}${item.name} ${drugInfoBtnHtml}${noticeBtnHtml}${recallBtnHtml}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
                         <div class="prod-info">🏢 ${sName} &nbsp;|&nbsp; ${mNameHtml}</div>
                         ${oosBottomInfo}
@@ -478,25 +490,122 @@
 
         window.addEventListener('load', loadData);
 
-        // 1. 일반 제약사공문 팝업 열기
-        window.openNoticeSearchPopup = function(id) {
+        // 🌟 성분 문자열 깔끔하게 정리하는 보조 함수
+        function cleanIngredient(rawIngr) {
+            if (!rawIngr || rawIngr === '데이터 없음' || rawIngr === '-' || rawIngr === '식약처미등록') return '-';
+            let parts = rawIngr.split('|');
+            let cleaned = parts.map(p => p.replace(/\[.*?\]/g, '').trim());
+            let unique = [...new Set(cleaned)].filter(p => p !== '');
+            return unique.join(', ');
+        }
+
+        // 🌟 [방식 B 신규] 의약품 성상 및 식약처 상세정보 팝업 열기 (미수집 품목은 1초 실시간 연동!)
+        window.openDrugInfoPopup = async function(pCode) {
+            let prod = productsData.find(p => String(p.code) === String(pCode));
+            if (!prod) return;
+
+            const renderDrugModal = (item, isSyncing = false) => {
+                let sName = "-";
+                if (item.seller) {
+                    const dCode = formatCode3(item.seller);
+                    const sup = suppliersData.find(s => formatCode3(s.code) === dCode);
+                    if (sup) sName = cleanCompanyName(sup.name);
+                }
+
+                const chartTxt = (item.chart && item.chart !== '식약처미등록' && item.chart !== '데이터 없음')
+                    ? item.chart
+                    : (isSyncing ? '⏳ 식약처에서 성상 정보를 조회하고 있습니다...' : '등록된 상세 성상 텍스트가 없습니다.');
+                const ingrTxt = cleanIngredient(item.ingredient);
+                const clsTxt = (item.classification && item.classification !== '기타일반약품') ? item.classification : '-';
+                const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음') ? item.ref_drug : '-';
+
+                document.getElementById('notice-modal-title').innerText = `💊 [의약품 성상정보] ${item.name} ${item.spec || ''}`;
+
+                const bodyEl = document.getElementById('notice-modal-body');
+                bodyEl.style.display = 'block';
+                bodyEl.style.background = '#F5F3FF';
+                bodyEl.style.borderColor = '#DDD6FE';
+                bodyEl.innerHTML = `
+                    <div><b>🏢 매입처 :</b> ${sName} <span style="color:#64748B; font-size:0.85rem;">(TJ코드: ${item.code} | 표준: ${item.standardCode || '-'} | 건보: ${item.ediCode || '-'})</span></div>
+                    <div style="margin-top:6px;"><b>🔍 성상 및 식별표시 :</b> <span style="color:#5B21B6; font-weight:800; background:#EDE9FE; padding:3px 8px; border-radius:6px;">${chartTxt}</span></div>
+                    <div style="margin-top:6px;"><b>🧪 주성분 :</b> <span style="font-weight:600; color:#0F172A;">${ingrTxt}</span></div>
+                    <div style="margin-top:6px;"><b>📂 식약처 분류 :</b> ${clsTxt}</div>
+                    <div style="margin-top:6px;"><b>👑 대조약 정보 :</b> <span style="color:#059669; font-weight:700;">${refTxt}</span></div>
+                    ${isSyncing ? `<div style="margin-top:10px; padding:8px; background:#EDE9FE; color:#6D28D9; border-radius:8px; font-weight:700; text-align:center;">⏳ 식약처 공공데이터에서 실시간 성상·식별 정보를 가져오는 중입니다... (약 1~2초)</div>` : ''}
+                `;
+
+                const imgEl = document.getElementById('notice-modal-img');
+                const guideEl = document.getElementById('notice-img-guide');
+                if (item.item_image && item.item_image !== '데이터 없음' && item.item_image !== '-') {
+                    imgEl.src = item.item_image;
+                    imgEl.style.display = 'block';
+                    guideEl.innerText = '🔍 아래 의약품 성상 이미지를 클릭하면 크게 확대됩니다!';
+                    guideEl.style.display = 'block';
+                } else {
+                    imgEl.src = '';
+                    imgEl.style.display = 'none';
+                    guideEl.style.display = 'none';
+                }
+
+                document.getElementById('notice-search-modal').style.display = 'flex';
+            };
+
+            const needsLiveSync = (!prod.chart || prod.chart === '') || (!prod.ingredient || prod.ingredient === '');
+            renderDrugModal(prod, needsLiveSync);
+
+            // 아직 성상(chart)이나 성분이 수집되지 않은 품목이면 즉시 식약처 실시간 동기화 요청!
+            if (needsLiveSync && prod.standardCode && prod.ediCode) {
+                try {
+                    const apiKey1 = "RZuGihPu%2F6CrX4SlBMzIx4wHhKMRhzBzkTKPGlBQcoI0g1X%2Bcn%2Fn%2FbHJMiAWH7TwnqqEaKIZfjBnfXVF1o4bLA%3D%3D";
+                    const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=syncMfdsData', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ apiKey1: apiKey1, apiKey2: apiKey1, productCodes: [prod] })
+                    });
+                    if (res.ok) {
+                        const allRes = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll');
+                        const allData = await allRes.json();
+                        if (allData.products) {
+                            productsData = allData.products;
+                            prod = productsData.find(p => String(p.code) === String(pCode)) || prod;
+                        }
+                    }
+                } catch (e) {}
+                renderDrugModal(prod, false);
+            }
+        };
+
+        // 1. 일반 제약사공문 팝업 열기 (지연 로딩 적용)
+        window.openNoticeSearchPopup = async function(id) {
             const notice = noticeEntries.find(n => String(n.id) === String(id));
             if (notice && notice.content) {
                 document.getElementById('notice-modal-title').innerText = `📢 [${notice.vCode || '공문'}] ${notice.vName || '제약사 공문'}`;
                 document.getElementById('notice-modal-body').style.display = 'none';
+                document.getElementById('notice-img-guide').innerText = '🔍 아래 공문 이미지를 클릭하면 글씨가 잘 보이도록 크게 확대됩니다!';
                 document.getElementById('notice-img-guide').style.display = 'block';
                 
                 const imgEl = document.getElementById('notice-modal-img');
-                imgEl.src = notice.content;
-                imgEl.style.display = 'block';
+                imgEl.src = '';
+                imgEl.style.display = 'none';
                 document.getElementById('notice-search-modal').style.display = 'flex';
+
+                if (notice.content === 'data:image_lazy') {
+                    try {
+                        const res = await fetch(`https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getEntryContent&id=${encodeURIComponent(id)}`);
+                        const data = await res.json();
+                        if (data.content) notice.content = data.content;
+                    } catch(e) {}
+                }
+                if (notice.content && notice.content !== 'data:image_lazy') {
+                    imgEl.src = notice.content;
+                    imgEl.style.display = 'block';
+                }
             } else {
                 alert("첨부된 공문 이미지가 없습니다.");
             }
         };
 
-        // 2. 제약사회수 팝업 열기
-        window.openRecallSearchPopup = function(id) {
+        // 2. 제약사회수 팝업 열기 (지연 로딩 적용)
+        window.openRecallSearchPopup = async function(id) {
             const item = recallEntries.find(r => String(r.id) === String(id));
             if (!item) return;
 
@@ -510,6 +619,8 @@
 
             const bodyEl = document.getElementById('notice-modal-body');
             bodyEl.style.display = 'block';
+            bodyEl.style.background = '#FFF1F2';
+            bodyEl.style.borderColor = '#FECDD3';
             bodyEl.innerHTML = `
                 <div><b>제약사 :</b> ${sup || '-'}</div>
                 <div><b>제품명 :</b> ${fullProd}</div>
@@ -523,17 +634,27 @@
 
             const imgEl = document.getElementById('notice-modal-img');
             const guideEl = document.getElementById('notice-img-guide');
-            if (item.content && item.content.startsWith('data:image')) {
-                imgEl.src = item.content;
-                imgEl.style.display = 'block';
-                guideEl.style.display = 'block';
-            } else {
-                imgEl.src = '';
-                imgEl.style.display = 'none';
-                guideEl.style.display = 'none';
-            }
+            imgEl.src = '';
+            imgEl.style.display = 'none';
+            guideEl.style.display = 'none';
 
             document.getElementById('notice-search-modal').style.display = 'flex';
+
+            if (item.content && item.content.startsWith('data:image')) {
+                if (item.content === 'data:image_lazy') {
+                    try {
+                        const res = await fetch(`https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getEntryContent&id=${encodeURIComponent(id)}`);
+                        const data = await res.json();
+                        if (data.content) item.content = data.content;
+                    } catch(e) {}
+                }
+                if (item.content && item.content !== 'data:image_lazy') {
+                    imgEl.src = item.content;
+                    imgEl.style.display = 'block';
+                    guideEl.innerText = '🔍 아래 공문 이미지를 클릭하면 글씨가 잘 보이도록 크게 확대됩니다!';
+                    guideEl.style.display = 'block';
+                }
+            }
         };
 
         // 공문 팝업 닫기
