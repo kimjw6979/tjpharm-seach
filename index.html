@@ -216,7 +216,7 @@
     <div class="search-container">
         <div class="input-wrapper">
             <span class="search-icon">🔍</span>
-            <input type="text" id="search-input" class="search-input" placeholder="제품명 또는 코드 입력 (예: 레가론, 듀락칸)" autocomplete="off" autofocus>
+            <input type="text" id="search-input" class="search-input" placeholder="제품명 또는 코드 입력 (예: 이모튼)" autocomplete="off" autofocus>
             <ul id="search-list" class="autocomplete-list"></ul>
         </div>
         
@@ -354,10 +354,10 @@
                     } catch (cacheErr) {}
                 }
 
-                input.placeholder = "제품명 또는 코드 입력 (예: 레가론, 듀락칸)";
+                input.placeholder = "제품명 또는 코드 입력 (예: 이모튼)";
                 input.disabled = false;
 
-                // 🌟 사용자가 로딩 중에 미리 검색어(예: 레가론)를 입력해 두었다면 완료 즉시 자동으로 검색 결과창 오픈!
+                // 🌟 사용자가 로딩 중에 미리 검색어(예: 이모튼)를 입력해 두었다면 완료 즉시 자동으로 검색 결과창 오픈!
                 if (input.value.trim() !== "") {
                     renderSearchResults();
                 }
