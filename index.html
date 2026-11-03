@@ -328,23 +328,10 @@
         async function loadData() {
             const input = document.getElementById('search-input');
             try {
-                        let loadRetryCount = 0;
-        async function loadData() {
-            const input = document.getElementById('search-input');
-            try {
-                // 🌟 [수정] 15초 안에 응답이 없으면 끊고 재시도 (무한 대기 방지)
-                const ctrl = new AbortController();
-                const timer = setTimeout(() => ctrl.abort(), 15000);
-                const t0 = performance.now();
-                const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll&mode=search', { signal: ctrl.signal });
-                clearTimeout(timer);
-                if (!res.ok) throw new Error("서버 응답 오류: " + res.status);
+                const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=getAll&mode=search');
+                if (!res.ok) throw new Error("서버 응답 오류");
                 const data = await res.json();
-                console.log(`[getAll] ${Math.round(performance.now() - t0)}ms, 상품 ${data.products ? data.products.length : 0}건`);
-
-                // 🌟 [수정] 상품이 0건이면 '로딩 중'에 영원히 머물지 않도록 오류로 처리
-                if (!data.products || data.products.length === 0) throw new Error("상품 데이터 0건");
-
+                
                 if (data.products && data.products.length > 0) {
                     productsData = data.products; 
                     suppliersData = data.suppliers || []; 
@@ -377,21 +364,7 @@
             } catch (e) {
                 console.error("데이터 로딩 실패:", e);
                 if (!isDataLoaded) {
-                    // 🌟 [수정] 실패 시 자동 재시도(최대 3회) + 화면에 상태 표시
-                    loadRetryCount++;
-                    const list = document.getElementById('search-list');
-                    if (loadRetryCount <= 3) {
-                        input.placeholder = `서버 연결 지연 중... 자동 재시도 (${loadRetryCount}/3)`;
-                        if (input.value.trim() !== "") {
-                            list.innerHTML = `<li style="text-align:center; color:#D97706; font-weight:700; padding:20px;">⚠️ 서버 응답이 늦어 다시 시도하는 중입니다... (${loadRetryCount}/3)</li>`;
-                            list.style.display = 'block';
-                        }
-                        setTimeout(loadData, 2000 * loadRetryCount);
-                    } else {
-                        input.placeholder = "서버에 연결할 수 없습니다. 새로고침(F5) 해주세요.";
-                        list.innerHTML = '<li style="text-align:center; color:#DC2626; font-weight:700; padding:20px;">❌ 서버에 연결할 수 없습니다. 잠시 후 새로고침(F5) 해주세요.</li>';
-                        list.style.display = 'block';
-                    }
+                    input.placeholder = "서버 연결 지연 중... 잠시 후 다시 입력해 주세요.";
                 }
             }
         }
