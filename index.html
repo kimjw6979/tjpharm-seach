@@ -606,7 +606,7 @@
                 document.getElementById('notice-search-modal').style.display = 'flex';
             };
 
-            const needsLiveSync = (!prod.chart || prod.chart === '') || (!prod.ingredient || prod.ingredient === '');
+            const needsLiveSync = (!prod.chart || prod.chart === '') || (!prod.ingredient || prod.ingredient === '') || (!prod.ref_drug || prod.ref_drug === '' || prod.ref_drug === '데이터 없음');
             renderDrugModal(prod, needsLiveSync);
 
             if (needsLiveSync && prod.standardCode && prod.ediCode) {
