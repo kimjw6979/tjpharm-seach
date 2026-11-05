@@ -609,7 +609,8 @@
             const needsLiveSync = (!prod.chart || prod.chart === '') || (!prod.ingredient || prod.ingredient === '') || (!prod.ref_drug || prod.ref_drug === '' || prod.ref_drug === '데이터 없음');
             renderDrugModal(prod, needsLiveSync);
 
-            if (needsLiveSync && prod.standardCode && prod.ediCode) {
+            // 🌟 건보코드가 없거나 빈칸이면 무리한 실시간 조회를 생략하고 즉시 팝업을 완성합니다.
+            if (needsLiveSync && prod.ediCode && prod.ediCode !== '-') {
                 try {
                     const apiKey1 = "RZuGihPu%2F6CrX4SlBMzIx4wHhKMRhzBzkTKPGlBQcoI0g1X%2Bcn%2Fn%2FbHJMiAWH7TwnqqEaKIZfjBnfXVF1o4bLA%3D%3D";
                     const res = await fetch('https://tjpharm2038-api.yellowcuppy.workers.dev/?action=syncMfdsData', {
@@ -623,8 +624,9 @@
                         }
                     }
                 } catch (e) {}
-                renderDrugModal(prod, false);
             }
+            // 데이터 조회가 성공했든 실패했든 무한 로딩을 멈추고 화면을 렌더링합니다.
+            renderDrugModal(prod, false);
         };
 
         // 1. 일반 제약사공문 팝업 열기 (원본 이미지 즉시 표시 + 혹시 지연 표식이면 단건 로드)
