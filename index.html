@@ -548,7 +548,7 @@
 
         // 🌟 성분 문자열 깔끔하게 정리하는 보조 함수
         function cleanIngredient(rawIngr) {
-            if (!rawIngr || rawIngr === '데이터 없음' || rawIngr === '-' || rawIngr === '식약처미등록') return '-';
+            if (!rawIngr || rawIngr === '데이터 없음' || rawIngr === '-' || rawIngr === '대조약 없음 (오리지널 또는 대상외)') return '-';
             let parts = rawIngr.split('|');
             let cleaned = parts.map(p => p.replace(/\[.*?\]/g, '').trim());
             let unique = [...new Set(cleaned)].filter(p => p !== '');
