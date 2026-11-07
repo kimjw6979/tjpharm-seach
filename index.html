@@ -548,7 +548,7 @@
 
         // 🌟 성분 문자열 깔끔하게 정리하는 보조 함수
         function cleanIngredient(rawIngr) {
-            if (!rawIngr || rawIngr === '데이터 없음' || rawIngr === '-' || rawIngr === '대조약 없음 (오리지널 또는 대상외)') return '-';
+            if (!rawIngr || rawIngr === '데이터 없음' || rawIngr === '-' || rawIngr === '식약처미등록') return '-';
             let parts = rawIngr.split('|');
             let cleaned = parts.map(p => p.replace(/\[.*?\]/g, '').trim());
             let unique = [...new Set(cleaned)].filter(p => p !== '');
@@ -573,9 +573,8 @@
                     : (isSyncing ? '⏳ 식약처에서 성상 정보를 조회하고 있습니다...' : '등록된 상세 성상 텍스트가 없습니다.');
                 const ingrTxt = cleanIngredient(item.ingredient);
                 const clsTxt = (item.classification && item.classification !== '기타일반약품') ? item.classification : '-';
-                
-                // 🌟 대조약이 비어있을 때 '-' 대신 아래 문구로 확실하게 표시해줍니다!
-                const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음' && item.ref_drug !== '식약처미등록') ? item.ref_drug : '대조약 없음 (단독품목/오리지널)';
+                const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음') ? item.ref_drug : '-';
+
                 document.getElementById('notice-modal-title').innerText = `💊 [의약품 성상정보] ${item.name} ${item.spec || ''}`;
 
                 const bodyEl = document.getElementById('notice-modal-body');
@@ -607,10 +606,7 @@
                 document.getElementById('notice-search-modal').style.display = 'flex';
             };
 
-            const needsLiveSync = (!item.chart || item.chart === '' || item.chart === '-' || item.chart === '데이터 없음') || 
-                                  (!item.ingredient || item.ingredient === '' || item.ingredient === '-' || item.ingredient === '데이터 없음') ||
-                                  (!item.ref_drug || item.ref_drug === '' || item.ref_drug === '-' || item.ref_drug === '데이터 없음' || item.ref_drug === '식약처미등록') ||
-                                  (isTablet && (!item.item_image || item.item_image === '' || item.item_image === '-' || item.item_image === '데이터 없음'));
+            const needsLiveSync = (!prod.chart || prod.chart === '') || (!prod.ingredient || prod.ingredient === '') || (!prod.ref_drug || prod.ref_drug === '' || prod.ref_drug === '데이터 없음');
             renderDrugModal(prod, needsLiveSync);
 
             if (needsLiveSync && prod.standardCode && prod.ediCode) {
