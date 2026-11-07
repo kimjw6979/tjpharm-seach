@@ -573,7 +573,7 @@
                     : (isSyncing ? '⏳ 식약처에서 성상 정보를 조회하고 있습니다...' : '등록된 상세 성상 텍스트가 없습니다.');
                 const ingrTxt = cleanIngredient(item.ingredient);
                 const clsTxt = (item.classification && item.classification !== '기타일반약품') ? item.classification : '-';
-                const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음') ? item.ref_drug : '-';
+                const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음') ? item.ref_drug : (isSyncing ? '⏳ 대조약 조회 중...' : '-');
 
                 document.getElementById('notice-modal-title').innerText = `💊 [의약품 성상정보] ${item.name} ${item.spec || ''}`;
 
@@ -606,7 +606,7 @@
                 document.getElementById('notice-search-modal').style.display = 'flex';
             };
 
-            const needsLiveSync = (!prod.chart || prod.chart === '') || (!prod.ingredient || prod.ingredient === '') || (!prod.ref_drug || prod.ref_drug === '' || prod.ref_drug === '데이터 없음');
+            const needsLiveSync = (!prod.chart || prod.chart === '') || (!prod.ingredient || prod.ingredient === '') || (!prod.ref_drug || prod.ref_drug === '' || prod.ref_drug === '데이터 없음' || (prod.ref_drug === '식약처미등록' && cleanIngredient(prod.ingredient) !== '-'));
             renderDrugModal(prod, needsLiveSync);
 
             if (needsLiveSync && prod.standardCode && prod.ediCode) {
