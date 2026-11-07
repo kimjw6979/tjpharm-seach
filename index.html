@@ -573,7 +573,7 @@
                     : (isSyncing ? '⏳ 식약처에서 성상 정보를 조회하고 있습니다...' : '등록된 상세 성상 텍스트가 없습니다.');
                 const ingrTxt = cleanIngredient(item.ingredient);
                 const clsTxt = (item.classification && item.classification !== '기타일반약품') ? item.classification : '-';
-                const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음') ? item.ref_drug : '-';
+                const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음' && item.ref_drug !== '식약처미등록') ? item.ref_drug : '-';
 
                 document.getElementById('notice-modal-title').innerText = `💊 [의약품 성상정보] ${item.name} ${item.spec || ''}`;
 
