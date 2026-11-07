@@ -607,7 +607,10 @@
                 document.getElementById('notice-search-modal').style.display = 'flex';
             };
 
-            const needsLiveSync = (!prod.chart || prod.chart === '') || (!prod.ingredient || prod.ingredient === '') || (!prod.ref_drug || prod.ref_drug === '' || prod.ref_drug === '데이터 없음');
+            const needsLiveSync = (!item.chart || item.chart === '' || item.chart === '-' || item.chart === '데이터 없음') || 
+                                  (!item.ingredient || item.ingredient === '' || item.ingredient === '-' || item.ingredient === '데이터 없음') ||
+                                  (!item.ref_drug || item.ref_drug === '' || item.ref_drug === '-' || item.ref_drug === '데이터 없음' || item.ref_drug === '식약처미등록') ||
+                                  (isTablet && (!item.item_image || item.item_image === '' || item.item_image === '-' || item.item_image === '데이터 없음'));
             renderDrugModal(prod, needsLiveSync);
 
             if (needsLiveSync && prod.standardCode && prod.ediCode) {
