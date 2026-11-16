@@ -196,6 +196,11 @@
             margin-left: 6px; vertical-align: middle;
         }
         .drug-info-btn:hover { background: #EDE9FE; transform: translateY(-1px); }
+
+        /* ✨ 검색기 기능 안내 칩 */
+        .feature-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 14px; padding: 0 10px; }
+        .feature-chip { display: inline-flex; align-items: center; padding: 4px 10px; border: 1px solid; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+        .chips-caption { margin: 6px 0 0 0; font-size: 0.8rem; color: #94A3B8; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -206,6 +211,15 @@
             제조사와 실제 유통사가 달라서 헷갈리시나요?<br>
             <strong style="color: var(--primary);">실제 매입처</strong>와 <strong style="color: var(--primary);">담당자</strong>를 1초 만에 확인하세요!
         </p>
+        <!-- ✨ 검색기 기능 안내 칩 -->
+        <div class="feature-chips">
+            <span class="feature-chip" style="background:#F5F3FF; color:#6D28D9; border-color:#DDD6FE;">💊 성상정보</span>
+            <span class="feature-chip" style="background:#ECFDF5; color:#047857; border-color:#A7F3D0;">👑 대조약</span>
+            <span class="feature-chip" style="background:#FEF2F2; color:#DC2626; border-color:#FECACA;">🔴 품절·중단</span>
+            <span class="feature-chip" style="background:#FFF1F2; color:#E11D48; border-color:#FECDD3;">🚨 회수공문</span>
+            <span class="feature-chip" style="background:#FFFBEB; color:#D97706; border-color:#FDE68A;">📄 제약사공문</span>
+        </div>
+        <p class="chips-caption">제품을 검색하면 위 정보도 함께 확인할 수 있어요</p>
         <div style="margin-top: 12px; padding: 0 10px;">
             <div style="display: inline-block; font-size: 0.85rem; color: #1D4ED8; background-color: #DBEAFE; padding: 8px 16px; border-radius: 12px; font-weight: 700; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1); line-height: 1.5; word-break: keep-all;">
                 💡 검색된 [👨‍💼 이름 💬] 버튼을 누르면<br>팀즈 1:1 채팅이 열립니다!
