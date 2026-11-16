@@ -279,6 +279,7 @@
         let entries = []; 
         let noticeEntries = []; 
         let recallEntries = []; 
+        let recallCodeSet = new Set(); // 🔄 [회수 일반약] 회수 등록 품목코드
         let currentZoomWidth = 1000;
 
         const isTrue = (val) => val === 1 || val === true || val === 'true';
@@ -341,6 +342,7 @@
                     
                     noticeEntries = entries.filter(e => e.boardType === 'notice' && !isTrue(e.del));
                     recallEntries = entries.filter(e => e.boardType === 'recall' && !isTrue(e.del));
+                    recallCodeSet = new Set(recallEntries.flatMap(r => String(r.pCode || '').split(',').map(c => c.trim().padStart(6, '0')))); // 🔄 [회수 일반약]
                     isDataLoaded = true;
 
                     // 다음 접속 시 0.01초 만에 검색되도록 가벼운 텍스트 데이터만 캐싱
@@ -391,7 +393,10 @@
             const searchTerms = val.split(/\s+/).filter(t => t.length > 0); 
 
             let matches = productsData.filter(item => {
-                if (!item || !item.standardCode || String(item.standardCode).trim() === "") return false;
+                if (!item) return false;
+                // 🔄 [회수 일반약] 표준코드가 없는 품목은 제약사회수에 등록된 경우에만 검색
+                const hasStd = item.standardCode && String(item.standardCode).trim() !== "";
+                if (!hasStd && !recallCodeSet.has(String(item.code).trim().padStart(6, '0'))) return false;
                 
                 const code = String(item.code || '').toLowerCase();
                 const name = String(item.name || '').toLowerCase();
