@@ -201,6 +201,16 @@
         .feature-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 14px; padding: 0 10px; }
         .feature-chip { display: inline-flex; align-items: center; padding: 4px 10px; border: 1px solid; border-radius: 999px; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
         .chips-caption { margin: 6px 0 0 0; font-size: 0.8rem; color: #94A3B8; font-weight: 500; }
+
+        /* 📅 [상품색인부 업데이트 알림] */
+        .update-banner { display: flex; align-items: center; gap: 10px; background: #ECFDF5; border: 1px solid #A7F3D0; color: #065F46;
+            padding: 12px 14px; border-radius: 14px; margin-bottom: 14px; font-size: 0.92rem; box-shadow: 0 4px 10px -4px rgba(16,185,129,0.25); }
+        .update-badge { background: #10B981; color: white; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 999px; flex-shrink: 0; }
+        .update-text { flex: 1; line-height: 1.4; }
+        .update-text b { color: #047857; margin-left: 2px; white-space: nowrap; }
+        .update-close { background: white; color: #047857; border: 1px solid #A7F3D0; border-radius: 8px; padding: 5px 10px;
+            font-size: 0.8rem; font-weight: 700; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+        .update-close:hover { background: #D1FAE5; }
     </style>
 </head>
 <body>
@@ -214,7 +224,6 @@
         <!-- ✨ 검색기 기능 안내 칩 -->
         <div class="feature-chips">
             <span class="feature-chip" style="background:#F5F3FF; color:#6D28D9; border-color:#DDD6FE;">💊 성상정보</span>
-            <span class="feature-chip" style="background:#ECFDF5; color:#047857; border-color:#A7F3D0;">👑 대조약</span>
             <span class="feature-chip" style="background:#FEF2F2; color:#DC2626; border-color:#FECACA;">🔴 품절·중단</span>
             <span class="feature-chip" style="background:#FFF1F2; color:#E11D48; border-color:#FECDD3;">🚨 회수공문</span>
             <span class="feature-chip" style="background:#FFFBEB; color:#D97706; border-color:#FDE68A;">📄 제약사공문</span>
@@ -228,6 +237,12 @@
     </div>
 
     <div class="search-container">
+        <!-- 📅 [상품색인부 업데이트 알림] 새 업데이트가 있으면 검색 전에 보이고, 확인을 누르면 다음 업데이트 때까지 숨김 -->
+        <div id="update-banner" class="update-banner" style="display:none;">
+            <span class="update-badge">NEW</span>
+            <span class="update-text">상품색인부가 업데이트되었습니다 <b id="update-banner-date"></b></span>
+            <button class="update-close" onclick="dismissUpdateBanner()">확인 ✕</button>
+        </div>
         <div class="input-wrapper">
             <span class="search-icon">🔍</span>
             <input type="text" id="search-input" class="search-input" placeholder="제품명 또는 코드 입력 (예: 이모튼)" autocomplete="off" autofocus>
@@ -326,6 +341,26 @@
 
         let isDataLoaded = false;
 
+        // 📅 [상품색인부 업데이트 알림] 아직 확인 안 한 새 업데이트일 때만 배너 표시
+        const UPDATE_SEEN_KEY = 'tjpharm_products_update_seen';
+        let latestProductsUpdated = '';
+        function showProductsUpdated(dateStr) {
+            if (!dateStr) return;
+            latestProductsUpdated = dateStr;
+            let seen = '';
+            try { seen = localStorage.getItem(UPDATE_SEEN_KEY) || ''; } catch (e) {}
+            const banner = document.getElementById('update-banner');
+            if (!banner) return;
+            if (seen === dateStr) { banner.style.display = 'none'; return; }
+            document.getElementById('update-banner-date').textContent = `(${dateStr})`;
+            banner.style.display = 'flex';
+        }
+        window.dismissUpdateBanner = function() {
+            try { localStorage.setItem(UPDATE_SEEN_KEY, latestProductsUpdated); } catch (e) {}
+            document.getElementById('update-banner').style.display = 'none';
+            document.getElementById('search-input').focus();
+        };
+
         // 🌟 1. 접속 즉시 브라우저 캐시(localStorage)에서 이전 상품 목록을 0.01초 만에 먼저 불러와 대기 시간 0초 구현!
         try {
             const cached = localStorage.getItem('tjpharm_search_cache_v1');
@@ -336,6 +371,7 @@
                 managersData = parsed.managers || [];
                 outOfStockData = parsed.outofstock || [];
                 if (productsData.length > 0) isDataLoaded = true;
+                showProductsUpdated(parsed.productsUpdated); // 📅 [상품색인부 날짜]
             }
         } catch (e) {}
 
@@ -358,6 +394,7 @@
                     recallEntries = entries.filter(e => e.boardType === 'recall' && !isTrue(e.del));
                     recallCodeSet = new Set(recallEntries.flatMap(r => String(r.pCode || '').split(',').map(c => c.trim().padStart(6, '0')))); // 🔄 [회수 일반약]
                     isDataLoaded = true;
+                    showProductsUpdated(data.productsUpdated); // 📅 [상품색인부 날짜]
 
                     // 다음 접속 시 0.01초 만에 검색되도록 가벼운 텍스트 데이터만 캐싱
                     try {
@@ -365,7 +402,8 @@
                             products: productsData,
                             suppliers: suppliersData,
                             managers: managersData,
-                            outofstock: outOfStockData
+                            outofstock: outOfStockData,
+                            productsUpdated: data.productsUpdated || '' // 📅 [상품색인부 날짜]
                         }));
                     } catch (cacheErr) {}
                 }
