@@ -223,7 +223,13 @@
         .scan-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 1.05rem; color: #1E293B; }
         .scan-close { border: none; background: #CBD5E1; color: white; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
         .scan-reader { width: 100%; min-height: 220px; background: #0F172A; border-radius: 12px; overflow: hidden; }
-        .scan-reader video { width: 100% !important; height: auto !important; display: block; }
+        .scan-reader { position: relative; }
+        .scan-reader video { width: 100%; height: auto; display: block; }
+        .scan-frame { position: absolute; left: 10%; top: 10%; width: 80%; height: 80%; border: 3px solid rgba(255,255,255,0.9); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.25); pointer-events: none; }
+        .scan-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+        .scan-ctl { border: 1px solid #CBD5E1; background: white; color: #334155; border-radius: 999px; padding: 6px 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .scan-ctl.on { background: var(--primary); color: white; border-color: var(--primary); }
+        .scan-reader { cursor: pointer; }
         .scan-status { margin: 10px 0 4px; font-weight: 700; color: var(--primary); font-size: 0.92rem; }
         .scan-tip { margin: 0 0 12px; font-size: 0.82rem; color: #64748B; }
         .scan-photo-btn { display: inline-block; padding: 10px 14px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 0.88rem; font-weight: 700; color: #334155; cursor: pointer; }
@@ -286,9 +292,13 @@
                 <b>📷 바코드로 검색</b>
                 <button class="scan-close" onclick="closeBarcodeScanner()">닫기 ✖</button>
             </div>
-            <div id="scan-reader" class="scan-reader"></div>
+            <div id="scan-reader" class="scan-reader">
+                <video id="scan-video" playsinline muted autoplay></video>
+                <div class="scan-frame"></div>
+            </div>
+            <div id="scan-controls" class="scan-controls" style="display:none;"></div>
             <p id="scan-status" class="scan-status">카메라를 준비하는 중...</p>
-            <p class="scan-tip">박스의 <b>바코드</b>나 <b>네모난 2D 코드</b>를 화면 가운데에 맞춰주세요.</p>
+            <p class="scan-tip"><b>바코드</b>나 <b>네모난 2D 코드</b>를 가운데에 맞추고, 한 뼘 정도 떨어져서 비춰주세요.<br>흐리면 화면을 톡 치거나 줌·카메라를 바꿔보세요.</p>
             <label class="scan-photo-btn">
                 🖼️ 사진 찍어서 인식하기
                 <input type="file" id="scan-file" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromInput(this)">
@@ -831,20 +841,29 @@
         };
     
         // =====================================================================
-        // 📷 [바코드 검색] 박스의 바코드(EAN-13) 또는 GS1 2D코드(DataMatrix)를 찍어 표준코드로 검색
+        // 📷 [바코드 검색 v2] 박스의 바코드(EAN-13) 또는 GS1 2D코드(DataMatrix)를 찍어 표준코드로 검색
+        //  - 인식 엔진: zxing-cpp(WASM). 카메라 원본 해상도 그대로 읽어서 작은 2D 코드도 인식
+        //  - 갤럭시처럼 후면 카메라가 여러 개인 폰은 메인 카메라를 골라 씀 (광각은 가까이 초점이 안 맞음)
+        //  - 고해상도 + 연속 자동초점 + 2배 줌으로 시작, 화면 톡 = 초점 다시 잡기
         // =====================================================================
-        const SCAN_LIB_URL = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js';
+        const SCAN_LIB_URL = 'https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.5/dist/iife/reader/index.js';
+        const SCAN_FORMATS = ['EAN13', 'DataMatrix', 'Code128'];
+        const CAM_PREF_KEY = 'tjpharm_scan_camera_id';
         let scanLibPromise = null;
-        let html5Scanner = null;
-        let scanHandled = false;
+        let scanStream = null, scanTrack = null, trackCaps = {};
+        let scanLoopOn = false, scanHandled = false;
+        let rearCameras = [], currentCamIdx = 0;
+        let scanSession = 0; // 창을 닫으면 번호가 바뀌어서, 늦게 켜지는 카메라를 바로 끔
+        const scanCanvas = document.createElement('canvas');
+        const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
 
         function loadScanLib() {
-            if (window.Html5Qrcode) return Promise.resolve();
+            if (window.ZXingWASM) return Promise.resolve();
             if (!scanLibPromise) {
                 scanLibPromise = new Promise((resolve, reject) => {
                     const s = document.createElement('script');
                     s.src = SCAN_LIB_URL;
-                    s.onload = resolve;
+                    s.onload = () => { try { ZXingWASM.prepareZXingModule({ fireImmediately: true }); } catch (e) {} resolve(); };
                     s.onerror = () => { scanLibPromise = null; reject(new Error('바코드 인식 도구를 불러오지 못했습니다.')); };
                     document.head.appendChild(s);
                 });
@@ -858,9 +877,7 @@
             return String((10 - (sum % 10)) % 10);
         }
 
-        // 인식된 문자열 → 13자리 표준코드
-        //  - EAN-13 바코드: 그대로
-        //  - GS1 DataMatrix: (01) 뒤 14자리 GTIN에서 13자리 표준코드로 변환 (박스 단위 표시 숫자도 처리)
+        // 인식된 문자열 → 13자리 표준코드 (EAN-13 그대로 / GS1의 (01) 14자리 GTIN → 13자리)
         function toStandardCode(raw) {
             let s = String(raw || '').replace(/^\][A-Za-z]\d/, '').replace(/[\x00-\x1C\x1E-\x1F]/g, '');
             let gtin14 = null;
@@ -882,38 +899,159 @@
             if (el) { el.textContent = msg; el.style.color = isError ? '#DC2626' : 'var(--primary)'; }
         }
 
-        function scanFormats() {
-            const F = window.Html5QrcodeSupportedFormats;
-            return [F.EAN_13, F.DATA_MATRIX, F.CODE_128];
-        }
-
         function onBarcodeDecoded(text) {
-            if (scanHandled) return;
+            if (scanHandled) return true;
             const std = toStandardCode(text);
-            if (!std) { setScanStatus('의약품 바코드가 아닌 것 같아요. 다시 맞춰주세요.', true); return; }
+            if (!std) { setScanStatus('의약품 바코드가 아닌 것 같아요. 다시 맞춰주세요.', true); return false; }
             scanHandled = true;
             if (navigator.vibrate) navigator.vibrate(80);
             closeBarcodeScanner();
             const input = document.getElementById('search-input');
             input.value = std;
             renderSearchResults();
+            return true;
         }
+
+        async function decodeImageData(imageData) {
+            const res = await ZXingWASM.readBarcodes(imageData, { formats: SCAN_FORMATS, tryHarder: true, maxNumberOfSymbols: 1 });
+            return (res && res.length && res[0].isValid !== false) ? res[0].text : null;
+        }
+
+        // 실시간 인식: 화면 가운데 영역을 원본 해상도로 잘라서 읽음
+        async function scanLoop() {
+            const video = document.getElementById('scan-video');
+            while (scanLoopOn && !scanHandled) {
+                if (video.readyState >= 2 && video.videoWidth) {
+                    const vw = video.videoWidth, vh = video.videoHeight;
+                    const cw = Math.floor(vw * 0.8), ch = Math.floor(vh * 0.8);
+                    scanCanvas.width = cw; scanCanvas.height = ch;
+                    scanCtx.drawImage(video, (vw - cw) / 2, (vh - ch) / 2, cw, ch, 0, 0, cw, ch);
+                    try {
+                        const text = await decodeImageData(scanCtx.getImageData(0, 0, cw, ch));
+                        if (text && onBarcodeDecoded(text)) return;
+                    } catch (e) { console.error(e); }
+                }
+                await new Promise(r => setTimeout(r, 120));
+            }
+        }
+
+        async function pickRearCameras() {
+            try {
+                const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+                let rear = cams.filter(c => /back|rear|environment|후면/i.test(c.label || ''));
+                if (rear.length === 0) rear = cams;
+                // 갤럭시 등 'camera2 0, facing back' 형식이면 번호가 작은 쪽이 보통 메인 카메라
+                const num = c => { const m = String(c.label || '').match(/camera2?\s*(\d+)/i); return m ? Number(m[1]) : 99; };
+                return rear.sort((a, b) => num(a) - num(b));
+            } catch (e) { return []; }
+        }
+
+        async function stopCamera() {
+            scanLoopOn = false;
+            if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); }
+            scanStream = null; scanTrack = null;
+            const v = document.getElementById('scan-video');
+            if (v) v.srcObject = null;
+        }
+
+        async function startCamera(deviceId) {
+            await stopCamera();
+            const video = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+            if (deviceId) video.deviceId = { exact: deviceId }; else video.facingMode = { ideal: 'environment' };
+            const mySession = scanSession;
+            const stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+            if (mySession !== scanSession || scanHandled) { stream.getTracks().forEach(t => t.stop()); return; }
+            scanStream = stream;
+            scanTrack = scanStream.getVideoTracks()[0];
+            const v = document.getElementById('scan-video');
+            v.srcObject = scanStream;
+            await v.play().catch(() => {});
+            try { trackCaps = scanTrack.getCapabilities ? scanTrack.getCapabilities() : {}; } catch (e) { trackCaps = {}; }
+            await applyFocusAndZoom(2); // 2배 줌으로 시작 (지원하는 폰만)
+            scanLoopOn = true;
+            scanLoop();
+        }
+
+        async function applyFocusAndZoom(zoomLevel) {
+            if (!scanTrack) return;
+            const adv = {};
+            if (Array.isArray(trackCaps.focusMode) && trackCaps.focusMode.includes('continuous')) adv.focusMode = 'continuous';
+            if (trackCaps.zoom && zoomLevel) adv.zoom = Math.min(Math.max(zoomLevel, trackCaps.zoom.min || 1), trackCaps.zoom.max || 1);
+            if (Object.keys(adv).length) { try { await scanTrack.applyConstraints({ advanced: [adv] }); } catch (e) {} }
+            renderScanControls(adv.zoom || 1);
+        }
+
+        function renderScanControls(activeZoom) {
+            const box = document.getElementById('scan-controls');
+            if (!box) return;
+            let html = '';
+            if (trackCaps.zoom && (trackCaps.zoom.max || 1) > 1) {
+                html += [1, 2, 3].filter(z => z <= trackCaps.zoom.max)
+                    .map(z => `<button class="scan-ctl ${Math.abs(activeZoom - z) < 0.01 ? 'on' : ''}" onclick="setScanZoom(${z})">${z}×</button>`).join('');
+            }
+            if (rearCameras.length > 1) html += `<button class="scan-ctl" onclick="switchScanCamera()">🔄 카메라 바꾸기</button>`;
+            box.innerHTML = html;
+            box.style.display = html ? 'flex' : 'none';
+        }
+
+        window.setScanZoom = function(z) { applyFocusAndZoom(z); };
+
+        // 화면을 톡 치면 그 위치로 초점 다시 잡기 (지원하는 폰만)
+        async function tapToFocus(ev) {
+            if (!scanTrack) return;
+            const modes = Array.isArray(trackCaps.focusMode) ? trackCaps.focusMode : [];
+            const adv = {};
+            if ('pointsOfInterest' in trackCaps) {
+                const r = ev.currentTarget.getBoundingClientRect();
+                adv.pointsOfInterest = [{ x: (ev.clientX - r.left) / r.width, y: (ev.clientY - r.top) / r.height }];
+            }
+            if (modes.includes('single-shot')) adv.focusMode = 'single-shot';
+            else if (modes.includes('continuous')) adv.focusMode = 'continuous';
+            if (!Object.keys(adv).length) return;
+            setScanStatus('초점 맞추는 중...');
+            try { await scanTrack.applyConstraints({ advanced: [adv] }); } catch (e) {}
+            setTimeout(async () => {
+                if (scanTrack && modes.includes('continuous')) { try { await scanTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) {} }
+                if (!scanHandled) setScanStatus('바코드를 비춰주세요 · 흐리면 화면을 톡');
+            }, 1200);
+        }
+
+        window.switchScanCamera = async function() {
+            if (rearCameras.length < 2) return;
+            currentCamIdx = (currentCamIdx + 1) % rearCameras.length;
+            try { localStorage.setItem(CAM_PREF_KEY, rearCameras[currentCamIdx].deviceId); } catch (e) {}
+            setScanStatus('카메라 바꾸는 중...');
+            try { await startCamera(rearCameras[currentCamIdx].deviceId); setScanStatus('바코드를 비춰주세요 · 흐리면 화면을 톡'); }
+            catch (e) { setScanStatus('이 카메라는 쓸 수 없어요. 한 번 더 바꿔주세요.', true); }
+        };
 
         window.openBarcodeScanner = async function() {
             scanHandled = false;
+            scanSession++;
             document.getElementById('scan-modal').style.display = 'flex';
+            document.getElementById('scan-controls').style.display = 'none';
             setScanStatus('카메라를 준비하는 중...');
+            document.getElementById('scan-reader').onclick = tapToFocus;
             try {
-                await loadScanLib();
-                html5Scanner = new Html5Qrcode('scan-reader', { formatsToSupport: scanFormats(), verbose: false,
-                    experimentalFeatures: { useBarCodeDetectorIfSupported: true } });
-                await html5Scanner.start(
-                    { facingMode: 'environment' },
-                    { fps: 10, qrbox: (w, h) => ({ width: Math.floor(w * 0.85), height: Math.floor(h * 0.6) }) },
-                    onBarcodeDecoded,
-                    () => {}
-                );
-                setScanStatus('바코드를 비춰주세요');
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no camera api');
+                const libReady = loadScanLib();
+                await startCamera(null);                 // 권한 허용 → 카메라 이름을 읽을 수 있게 됨
+                rearCameras = await pickRearCameras();
+                let saved = null;
+                try { saved = localStorage.getItem(CAM_PREF_KEY); } catch (e) {}
+                const savedIdx = rearCameras.findIndex(c => c.deviceId === saved);
+                currentCamIdx = savedIdx >= 0 ? savedIdx : 0;
+                if (scanHandled) return;
+                const want = rearCameras[currentCamIdx];
+                const nowId = scanTrack && scanTrack.getSettings ? scanTrack.getSettings().deviceId : null;
+                if (want && want.deviceId && want.deviceId !== nowId) {
+                    try { await startCamera(want.deviceId); } catch (e) { await startCamera(null); }
+                } else {
+                    renderScanControls(trackCaps.zoom ? Math.min(2, trackCaps.zoom.max || 1) : 1);
+                }
+                setScanStatus('인식 도구 준비 중...');
+                await libReady;
+                if (!scanHandled) setScanStatus('바코드를 비춰주세요 · 흐리면 화면을 톡');
             } catch (e) {
                 console.error(e);
                 setScanStatus('카메라를 쓸 수 없어요. 아래 "사진 찍어서 인식하기"를 눌러주세요.', true);
@@ -921,15 +1059,12 @@
         };
 
         window.closeBarcodeScanner = async function() {
+            scanSession++;
             document.getElementById('scan-modal').style.display = 'none';
-            if (html5Scanner) {
-                const s = html5Scanner; html5Scanner = null;
-                try { if (s.isScanning) await s.stop(); } catch (e) {}
-                try { s.clear(); } catch (e) {}
-            }
+            await stopCamera();
         };
 
-        // 카메라 실시간 인식이 안 되는 폰을 위한 사진 인식
+        // 사진으로 인식 (실시간 카메라가 막힌 브라우저용)
         window.scanBarcodeFromInput = async function(inputEl) {
             const file = inputEl.files && inputEl.files[0];
             inputEl.value = '';
@@ -937,12 +1072,9 @@
             setScanStatus('사진에서 바코드를 찾는 중...');
             try {
                 await loadScanLib();
-                if (html5Scanner) { try { if (html5Scanner.isScanning) await html5Scanner.stop(); } catch (e) {} try { html5Scanner.clear(); } catch (e) {} }
-                html5Scanner = new Html5Qrcode('scan-reader', { formatsToSupport: scanFormats(), verbose: false });
-                const text = await html5Scanner.scanFile(file, false);
+                const res = await ZXingWASM.readBarcodes(file, { formats: SCAN_FORMATS, tryHarder: true, maxNumberOfSymbols: 1 });
                 scanHandled = false;
-                onBarcodeDecoded(text);
-                if (!scanHandled) return;
+                if (!(res && res.length) || !onBarcodeDecoded(res[0].text)) throw new Error('not found');
             } catch (e) {
                 setScanStatus('사진에서 바코드를 찾지 못했어요. 바코드가 크고 선명하게 나오도록 다시 찍어주세요.', true);
             }
