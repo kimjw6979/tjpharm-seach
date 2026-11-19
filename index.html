@@ -211,6 +211,23 @@
         .update-close { background: white; color: #047857; border: 1px solid #A7F3D0; border-radius: 8px; padding: 5px 10px;
             font-size: 0.8rem; font-weight: 700; cursor: pointer; flex-shrink: 0; font-family: inherit; }
         .update-close:hover { background: #D1FAE5; }
+
+        /* 📷 [바코드 검색] */
+        .search-input { padding-right: 4.2rem; }
+        .scan-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border: none;
+            background: var(--primary-light); color: var(--primary); border-radius: 12px; font-size: 1.3rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; z-index: 2; }
+        .scan-btn:hover { background: #DBEAFE; }
+        .scan-modal { position: fixed; inset: 0; background: rgba(15,23,42,0.75); z-index: 100000; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
+        .scan-box { background: white; border-radius: 18px; width: 100%; max-width: 440px; padding: 16px; box-sizing: border-box; text-align: center; }
+        .scan-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 1.05rem; color: #1E293B; }
+        .scan-close { border: none; background: #CBD5E1; color: white; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .scan-reader { width: 100%; min-height: 220px; background: #0F172A; border-radius: 12px; overflow: hidden; }
+        .scan-reader video { width: 100% !important; height: auto !important; display: block; }
+        .scan-status { margin: 10px 0 4px; font-weight: 700; color: var(--primary); font-size: 0.92rem; }
+        .scan-tip { margin: 0 0 12px; font-size: 0.82rem; color: #64748B; }
+        .scan-photo-btn { display: inline-block; padding: 10px 14px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 0.88rem; font-weight: 700; color: #334155; cursor: pointer; }
+        .scan-photo-btn:hover { background: #F8FAFC; }
     </style>
 </head>
 <body>
@@ -246,6 +263,7 @@
         <div class="input-wrapper">
             <span class="search-icon">🔍</span>
             <input type="text" id="search-input" class="search-input" placeholder="제품명 또는 코드 입력 (예: 이모튼)" autocomplete="off" autofocus>
+            <button type="button" class="scan-btn" onclick="openBarcodeScanner()" title="바코드로 검색">📷</button>
             <ul id="search-list" class="autocomplete-list"></ul>
         </div>
         
@@ -258,6 +276,23 @@
                     <strong>일반약 관련 문의는 전문 담당자에게 삼가주시기 바랍니다.</strong>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 📷 [바코드 검색] 스캔 모달 -->
+    <div id="scan-modal" class="scan-modal" style="display:none;" onclick="closeBarcodeScanner()">
+        <div class="scan-box" onclick="event.stopPropagation()">
+            <div class="scan-head">
+                <b>📷 바코드로 검색</b>
+                <button class="scan-close" onclick="closeBarcodeScanner()">닫기 ✖</button>
+            </div>
+            <div id="scan-reader" class="scan-reader"></div>
+            <p id="scan-status" class="scan-status">카메라를 준비하는 중...</p>
+            <p class="scan-tip">박스의 <b>바코드</b>나 <b>네모난 2D 코드</b>를 화면 가운데에 맞춰주세요.</p>
+            <label class="scan-photo-btn">
+                🖼️ 사진 찍어서 인식하기
+                <input type="file" id="scan-file" accept="image/*" capture="environment" style="display:none;" onchange="scanBarcodeFromInput(this)">
+            </label>
         </div>
     </div>
 
@@ -453,13 +488,21 @@
                 const code = String(item.code || '').toLowerCase();
                 const name = String(item.name || '').toLowerCase();
                 const spec = String(item.spec || '').toLowerCase();
+                const std = String(item.standardCode || '').trim(); // 📷 [바코드 검색]
 
                 return searchTerms.every(term => 
                     code.startsWith(term) ||
                     name.includes(term) ||
-                    spec.includes(term)
+                    spec.includes(term) ||
+                    (/^\d{8,}$/.test(term) && std.startsWith(term))
                 );
             });
+
+            // 📷 [바코드 검색] 13자리 표준코드가 정확히 없으면, 같은 제품의 다른 포장단위(앞 11자리 일치)를 찾아봄
+            if (matches.length === 0 && /^\d{13}$/.test(val)) {
+                const prefix = val.slice(0, 11);
+                matches = productsData.filter(item => item && String(item.standardCode || '').trim().startsWith(prefix));
+            }
 
             if (searchTerms.length > 0) {
                 const primaryTerm = searchTerms[0];
@@ -785,6 +828,124 @@
         // 이미지 원본 돋보기 팝업 닫기
         window.closeImageZoomPopup = function() {
             document.getElementById('image-zoom-modal').style.display = 'none';
+        };
+    
+        // =====================================================================
+        // 📷 [바코드 검색] 박스의 바코드(EAN-13) 또는 GS1 2D코드(DataMatrix)를 찍어 표준코드로 검색
+        // =====================================================================
+        const SCAN_LIB_URL = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js';
+        let scanLibPromise = null;
+        let html5Scanner = null;
+        let scanHandled = false;
+
+        function loadScanLib() {
+            if (window.Html5Qrcode) return Promise.resolve();
+            if (!scanLibPromise) {
+                scanLibPromise = new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = SCAN_LIB_URL;
+                    s.onload = resolve;
+                    s.onerror = () => { scanLibPromise = null; reject(new Error('바코드 인식 도구를 불러오지 못했습니다.')); };
+                    document.head.appendChild(s);
+                });
+            }
+            return scanLibPromise;
+        }
+
+        function ean13CheckDigit(base12) {
+            let sum = 0;
+            for (let i = 0; i < 12; i++) sum += Number(base12[i]) * (i % 2 ? 3 : 1);
+            return String((10 - (sum % 10)) % 10);
+        }
+
+        // 인식된 문자열 → 13자리 표준코드
+        //  - EAN-13 바코드: 그대로
+        //  - GS1 DataMatrix: (01) 뒤 14자리 GTIN에서 13자리 표준코드로 변환 (박스 단위 표시 숫자도 처리)
+        function toStandardCode(raw) {
+            let s = String(raw || '').replace(/^\][A-Za-z]\d/, '').replace(/[\x00-\x1C\x1E-\x1F]/g, '');
+            let gtin14 = null;
+            const ai = s.replace(/\x1D/g, '').match(/^\(?01\)?(\d{14})/);
+            if (ai) gtin14 = ai[1];
+            else {
+                const digits = s.replace(/\D/g, '');
+                if (digits.length === 13) return digits;
+                if (digits.length === 14) gtin14 = digits;
+            }
+            if (!gtin14) return null;
+            if (gtin14[0] === '0') return gtin14.slice(1);
+            const base12 = gtin14.slice(1, 13);
+            return base12 + ean13CheckDigit(base12);
+        }
+
+        function setScanStatus(msg, isError) {
+            const el = document.getElementById('scan-status');
+            if (el) { el.textContent = msg; el.style.color = isError ? '#DC2626' : 'var(--primary)'; }
+        }
+
+        function scanFormats() {
+            const F = window.Html5QrcodeSupportedFormats;
+            return [F.EAN_13, F.DATA_MATRIX, F.CODE_128];
+        }
+
+        function onBarcodeDecoded(text) {
+            if (scanHandled) return;
+            const std = toStandardCode(text);
+            if (!std) { setScanStatus('의약품 바코드가 아닌 것 같아요. 다시 맞춰주세요.', true); return; }
+            scanHandled = true;
+            if (navigator.vibrate) navigator.vibrate(80);
+            closeBarcodeScanner();
+            const input = document.getElementById('search-input');
+            input.value = std;
+            renderSearchResults();
+        }
+
+        window.openBarcodeScanner = async function() {
+            scanHandled = false;
+            document.getElementById('scan-modal').style.display = 'flex';
+            setScanStatus('카메라를 준비하는 중...');
+            try {
+                await loadScanLib();
+                html5Scanner = new Html5Qrcode('scan-reader', { formatsToSupport: scanFormats(), verbose: false,
+                    experimentalFeatures: { useBarCodeDetectorIfSupported: true } });
+                await html5Scanner.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: (w, h) => ({ width: Math.floor(w * 0.85), height: Math.floor(h * 0.6) }) },
+                    onBarcodeDecoded,
+                    () => {}
+                );
+                setScanStatus('바코드를 비춰주세요');
+            } catch (e) {
+                console.error(e);
+                setScanStatus('카메라를 쓸 수 없어요. 아래 "사진 찍어서 인식하기"를 눌러주세요.', true);
+            }
+        };
+
+        window.closeBarcodeScanner = async function() {
+            document.getElementById('scan-modal').style.display = 'none';
+            if (html5Scanner) {
+                const s = html5Scanner; html5Scanner = null;
+                try { if (s.isScanning) await s.stop(); } catch (e) {}
+                try { s.clear(); } catch (e) {}
+            }
+        };
+
+        // 카메라 실시간 인식이 안 되는 폰을 위한 사진 인식
+        window.scanBarcodeFromInput = async function(inputEl) {
+            const file = inputEl.files && inputEl.files[0];
+            inputEl.value = '';
+            if (!file) return;
+            setScanStatus('사진에서 바코드를 찾는 중...');
+            try {
+                await loadScanLib();
+                if (html5Scanner) { try { if (html5Scanner.isScanning) await html5Scanner.stop(); } catch (e) {} try { html5Scanner.clear(); } catch (e) {} }
+                html5Scanner = new Html5Qrcode('scan-reader', { formatsToSupport: scanFormats(), verbose: false });
+                const text = await html5Scanner.scanFile(file, false);
+                scanHandled = false;
+                onBarcodeDecoded(text);
+                if (!scanHandled) return;
+            } catch (e) {
+                setScanStatus('사진에서 바코드를 찾지 못했어요. 바코드가 크고 선명하게 나오도록 다시 찍어주세요.', true);
+            }
         };
     </script>
 </body>
