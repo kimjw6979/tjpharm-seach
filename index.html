@@ -234,6 +234,12 @@
         .scan-tip { margin: 0 0 12px; font-size: 0.82rem; color: #64748B; }
         .scan-photo-btn { display: inline-block; padding: 10px 14px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 0.88rem; font-weight: 700; color: #334155; cursor: pointer; }
         .scan-photo-btn:hover { background: #F8FAFC; }
+
+        /* ↩️ [반품여부] */
+        .ret-badge { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; border: 1px solid; white-space: nowrap; vertical-align: middle; }
+        .ret-badge.ok   { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+        .ret-badge.part { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+        .ret-badge.no   { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
     </style>
 </head>
 <body>
@@ -385,6 +391,20 @@
         }
 
         let isDataLoaded = false;
+
+        // ↩️ [반품여부] 매입처색인부 Agub(완포장) / Gub(소분) → 배지
+        function returnBadgeHtml(sup) {
+            if (!sup) return '';
+            const f = String(sup.ret_full || '').toUpperCase(), p = String(sup.ret_split || '').toUpperCase();
+            if (!f && !p) return '';
+            let cls, txt;
+            if (f === 'Y' && p === 'Y')      { cls = 'ok';   txt = '반품 가능'; }
+            else if (f === 'Y')              { cls = 'part'; txt = '완포장만 반품'; }
+            else if (p === 'Y')              { cls = 'part'; txt = '소분만 반품'; }
+            else                             { cls = 'no';   txt = '반품 불가'; }
+            const title = `완포장 반품: ${f || '-'} / 소분 반품: ${p || '-'}`;
+            return ` <span class="ret-badge ${cls}" title="${title}">↩️ ${txt}</span>`;
+        }
 
         // 📅 [상품색인부 업데이트 알림] 아직 확인 안 한 새 업데이트일 때만 배너 표시
         const UPDATE_SEEN_KEY = 'tjpharm_products_update_seen';
@@ -538,6 +558,7 @@
             if (matches.length > 0) {
                 matches.forEach(item => {
                     let sName = "-"; 
+                    let retBadge = ''; // ↩️ [반품여부]
                     let mNameHtml = "👨‍💼 -"; 
 
                     if (item.seller) { 
@@ -545,6 +566,7 @@
                         
                         const sup = suppliersData.find(s => formatCode3(s.code) === dCode); 
                         sName = sup ? cleanCompanyName(sup.name) : `미등록(${dCode})`; 
+                        retBadge = returnBadgeHtml(sup); // ↩️ [반품여부]
                         
                         const mgr = managersData.find(m => formatCode3(m.code) === dCode); 
                         if (mgr) {
@@ -623,7 +645,7 @@
                     li.innerHTML = `
                         <div class="prod-name">${oosBadgeTitle}${item.name} ${drugInfoBtnHtml}${noticeBtnHtml}${recallBtnHtml}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
-                        <div class="prod-info">🏢 ${sName} &nbsp;|&nbsp; ${mNameHtml}</div>
+                        <div class="prod-info">🏢 ${sName}${retBadge} &nbsp;|&nbsp; ${mNameHtml}</div>
                         ${oosBottomInfo}
                         ${recallBottomInfo}
                     `;
@@ -675,7 +697,7 @@
                 if (item.seller) {
                     const dCode = formatCode3(item.seller);
                     const sup = suppliersData.find(s => formatCode3(s.code) === dCode);
-                    if (sup) sName = cleanCompanyName(sup.name);
+                    if (sup) sName = cleanCompanyName(sup.name) + returnBadgeHtml(sup); // ↩️ [반품여부]
                 }
 
                 const chartTxt = (item.chart && item.chart !== '식약처미등록' && item.chart !== '데이터 없음')
