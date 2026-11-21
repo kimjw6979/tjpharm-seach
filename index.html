@@ -188,6 +188,9 @@
         .recall-btn:hover { background: #FFE4E6; transform: translateY(-1px); }
 
         /* 🌟 검색기 전용 의약품 성상보기 버튼 스타일 */
+        /* 📦 [출고상태] 출고중단 배지 */
+        .stop-badge { display: inline-block; background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-size: 0.75rem; font-weight: 800; padding: 2px 7px; border-radius: 6px; margin-right: 6px; vertical-align: middle; }
+
         .drug-info-btn {
             display: inline-flex; align-items: center; gap: 4px;
             background: #F5F3FF; color: #6D28D9; border: 1px solid #C4B5FD;
@@ -553,6 +556,10 @@
                 });
             }
 
+            // 📦 [출고상태] 출고중 상품을 먼저, 출고중단 상품은 뒤로 (같은 그룹 안에서는 기존 순서 유지)
+            const isStopped = (it) => it && it.active !== undefined && it.active !== null && Number(it.active) === 0;
+            matches = matches.filter(it => !isStopped(it)).concat(matches.filter(isStopped));
+
             matches = matches.slice(0, 50);
 
             if (matches.length > 0) {
@@ -643,7 +650,7 @@
                     };
 
                     li.innerHTML = `
-                        <div class="prod-name">${oosBadgeTitle}${item.name} ${drugInfoBtnHtml}${noticeBtnHtml}${recallBtnHtml}</div>
+                        <div class="prod-name">${isStopped(item) ? '<span class="stop-badge">출고중단</span>' : ''}${oosBadgeTitle}${item.name} ${drugInfoBtnHtml}${noticeBtnHtml}${recallBtnHtml}</div>
                         <div class="prod-meta">코드: ${item.code} | 규격: ${item.spec || '-'}</div>
                         <div class="prod-info">🏢 ${sName}${retBadge} &nbsp;|&nbsp; ${mNameHtml}</div>
                         ${oosBottomInfo}
@@ -707,7 +714,8 @@
                 const clsTxt = (item.classification && item.classification !== '기타일반약품') ? item.classification : '-';
                 const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음') ? item.ref_drug : (isSyncing ? '⏳ 대조약 조회 중...' : '-');
 
-                document.getElementById('notice-modal-title').innerText = `💊 [의약품 성상정보] ${item.name} ${item.spec || ''}`;
+                const stoppedTag = (item.active !== undefined && item.active !== null && Number(item.active) === 0) ? ' [출고중단]' : ''; // 📦 [출고상태]
+                document.getElementById('notice-modal-title').innerText = `💊 [의약품 성상정보] ${item.name} ${item.spec || ''}${stoppedTag}`;
 
                 const bodyEl = document.getElementById('notice-modal-body');
                 bodyEl.style.display = 'block';
