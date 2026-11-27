@@ -589,7 +589,8 @@
 
         // ↩️ [반품여부] 매입처색인부 Agub(완포장) / Gub(소분) → 배지
         function returnBadgeHtml(sup) {
-            if (!sup) return '';
+            return '';
+        }
             const f = String(sup.ret_full || '').toUpperCase(), p = String(sup.ret_split || '').toUpperCase();
             if (!f && !p) return '';
             let cls, txt;
