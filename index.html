@@ -45,28 +45,54 @@
             box-sizing: border-box;
         }
 
-        /* 🐿️ [웰컴 화면] 그라데이션 스플래시 */
+        /* 🐿️ [웰컴 화면] 풀스크린 포스터 + 시간대별 그라데이션 */
         #welcome-splash {
             position: fixed; inset: 0; z-index: 999999;
-            background: linear-gradient(160deg, #FEF3C7 0%, #ECFDF5 50%, #EFF6FF 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.6s ease, visibility 0.6s ease;
-            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease, transform 0.6s ease, visibility 0.6s ease;
+            cursor: pointer; overflow: hidden;
+            background: #EFF6FF;
         }
-        #welcome-splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-        .splash-img-wrap {
-            width: 420px; max-width: 85vw; max-height: 75vh;
-            border-radius: 28px; overflow: hidden;
-            box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.25);
-            position: relative;
+        #welcome-splash.hide {
+            opacity: 0; transform: scale(1.03); visibility: hidden; pointer-events: none;
         }
-        .splash-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .splash-img-wrap::after {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(239, 246, 255, 0.85) 0%, transparent 32%);
+        .splash-poster {
+            position: relative; width: 100%; max-width: 540px; height: 100%;
+            overflow: hidden; box-shadow: 0 0 40px rgba(0,0,0,0.15);
         }
-        .splash-title { margin-top: 18px; font-size: 1.35rem; font-weight: 800; color: #0F172A; }
-        .splash-sub { margin-top: 4px; font-size: 0.9rem; font-weight: 600; color: #2563EB; }
+        .splash-poster img {
+            width: 100%; height: 100%; object-fit: cover; object-position: center 25%;
+            display: block; animation: splashZoom 2.2s ease-out forwards;
+        }
+        @keyframes splashZoom {
+            from { transform: scale(1.06); }
+            to { transform: scale(1); }
+        }
+        .splash-overlay {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+            padding: 0 24px 10vh 24px; text-align: center; box-sizing: border-box;
+        }
+        .splash-badge {
+            font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em;
+            padding: 4px 12px; border-radius: 999px; margin-bottom: 12px;
+            backdrop-filter: blur(6px);
+        }
+        .splash-greeting {
+            font-size: 1.25rem; font-weight: 800; line-height: 1.45;
+            margin: 0 0 18px 0; word-break: keep-all;
+        }
+        .splash-dots { display: flex; gap: 6px; }
+        .splash-dots span {
+            width: 8px; height: 8px; border-radius: 50%;
+            animation: dotBounce 1s infinite ease-in-out;
+        }
+        .splash-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .splash-dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes dotBounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1.1); opacity: 1; }
+        }
 
         .header-section {
             text-align: center;
@@ -298,10 +324,17 @@
 </head>
 <body>
 
-    <!-- 🐿️ 웰컴 스플래시 화면 (클릭하면 바로 닫힘, 1.3초 후 자동 사라짐) -->
+    <!-- 🐿️ 풀스크린 포스터 + 시간대별 인사말 웰컴 화면 (터치 시 즉시 닫힘, 1.8초 후 자동 닫힘) -->
     <div id="welcome-splash" onclick="hideWelcomeSplash()">
-        <div class="splash-img-wrap">
+        <div class="splash-poster">
             <img src="logo.jpg" alt="TJPHARM">
+            <div id="splash-overlay" class="splash-overlay">
+                <div id="splash-badge" class="splash-badge">TJPHARM SEARCH</div>
+                <p id="splash-greeting" class="splash-greeting"></p>
+                <div id="splash-dots" class="splash-dots">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -335,7 +368,7 @@
         </div>
         <div class="input-wrapper">
             <span class="search-icon">🔍</span>
-            <input type="text" id="search-input" class="search-input" placeholder="제품명 또는 코드 입력"" autocomplete="off" autofocus>
+            <input type="text" id="search-input" class="search-input" placeholder="제품명 또는 코드 입력 (예: 이모튼)" autocomplete="off" autofocus>
             <button type="button" id="clear-btn" class="clear-btn" onclick="clearSearchInput()" title="검색어 지우기">✕</button>
             <button type="button" class="scan-btn" onclick="openBarcodeScanner()" title="바코드로 검색">📷</button>
             <ul id="search-list" class="autocomplete-list"></ul>
@@ -425,12 +458,54 @@
         let recallCodeSet = new Set(); // 🔄 [회수 일반약] 회수 등록 품목코드
         let currentZoomWidth = 1000;
 
-        // 🐿️ 웰컴 화면 자동 숨김 (1.3초 후 부드럽게 사라짐)
+        // 🐿️ 시간대별 웰컴 화면 세팅 + 1.8초 후 자동 닫힘
+        (function initWelcomeSplash() {
+            const hour = new Date().getHours();
+            const splash = document.getElementById('welcome-splash');
+            const overlay = document.getElementById('splash-overlay');
+            const badge = document.getElementById('splash-badge');
+            const greeting = document.getElementById('splash-greeting');
+            const dots = document.querySelectorAll('#splash-dots span');
+
+            let bg, grad, badgeBg, badgeColor, textColor, dotColor, msg;
+
+            if (hour >= 5 && hour < 12) {
+                // ☀️ 오전 (따뜻한 햇살 톤)
+                bg = '#FFFBEB';
+                grad = 'linear-gradient(to top, rgba(255,251,235,0.98) 0%, rgba(254,243,199,0.85) 28%, transparent 62%)';
+                badgeBg = 'rgba(217,119,6,0.14)'; badgeColor = '#B45309';
+                textColor = '#1E293B'; dotColor = '#D97706';
+                msg = '좋은 아침입니다!<br>오늘도 1초 만에 찾아드릴게요 ☀️';
+            } else if (hour >= 12 && hour < 18) {
+                // ☕ 오후 (산뜻한 블루 톤)
+                bg = '#EFF6FF';
+                grad = 'linear-gradient(to top, rgba(239,246,255,0.98) 0%, rgba(219,234,254,0.85) 28%, transparent 62%)';
+                badgeBg = 'rgba(37,99,235,0.14)'; badgeColor = '#1D4ED8';
+                textColor = '#0F172A'; dotColor = '#2563EB';
+                msg = '나른한 오후,<br>검색은 저에게 맡기세요 ☕';
+            } else {
+                // 🌙 저녁/야간 (차분한 네이비 톤)
+                bg = '#0F172A';
+                grad = 'linear-gradient(to top, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.82) 30%, transparent 65%)';
+                badgeBg = 'rgba(255,255,255,0.16)'; badgeColor = '#E2E8F0';
+                textColor = '#F8FAFC'; dotColor = '#60A5FA';
+                msg = '늦은 시간까지<br>고생 많으십니다 🌙';
+            }
+
+            splash.style.background = bg;
+            overlay.style.background = grad;
+            badge.style.background = badgeBg;
+            badge.style.color = badgeColor;
+            greeting.style.color = textColor;
+            greeting.innerHTML = msg;
+            dots.forEach(d => d.style.background = dotColor);
+        })();
+
         function hideWelcomeSplash() {
             const el = document.getElementById('welcome-splash');
             if (el) el.classList.add('hide');
         }
-        setTimeout(hideWelcomeSplash, 1300);
+        setTimeout(hideWelcomeSplash, 1800);
 
         // 🕘 최근 검색어 (최대 5개)
         const RECENT_KEY = 'tjpharm_recent_searches';
@@ -512,7 +587,7 @@
 
         let isDataLoaded = false;
 
-        // ↩️ [반품여부] 품목 반품불가(no_return) 최우선 → 매입처색인부 Agub(완포장) / Gub(소분)
+        // ↩️ [반품여부] 매입처색인부 Agub(완포장) / Gub(소분) → 배지
         function returnBadgeHtml(sup) {
             if (!sup) return '';
             const f = String(sup.ret_full || '').toUpperCase(), p = String(sup.ret_split || '').toUpperCase();
@@ -592,7 +667,7 @@
                     } catch (cacheErr) {}
                 }
 
-                input.placeholder = "제품명 또는 코드 입력";
+                input.placeholder = "제품명 또는 코드 입력 (예: 이모튼)";
                 input.disabled = false;
 
                 if (input.value.trim() !== "") {
@@ -701,8 +776,6 @@
                         } else {
                             mNameHtml = `👨‍💼 미등록(${dCode})`;
                         }
-                    } else {
-                        retBadge = returnBadgeHtml(null, item);
                     }
 
                     const oos = getOOSInfo(item.code);
@@ -816,9 +889,7 @@
                 if (item.seller) {
                     const dCode = formatCode3(item.seller);
                     const sup = suppliersData.find(s => formatCode3(s.code) === dCode);
-                    if (sup) sName = cleanCompanyName(sup.name) + returnBadgeHtml(sup, item);
-                } else {
-                    sName = "-" + returnBadgeHtml(null, item);
+                    if (sup) sName = cleanCompanyName(sup.name) + returnBadgeHtml(sup);
                 }
 
                 const chartTxt = (item.chart && item.chart !== '식약처미등록' && item.chart !== '데이터 없음')
