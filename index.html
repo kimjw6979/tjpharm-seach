@@ -645,7 +645,6 @@
                 const name = String(item.name || '').toLowerCase();
                 const spec = String(item.spec || '').toLowerCase();
                 const std = String(item.standardCode || '').trim();
-                
 
                 return searchTerms.every(term => 
                     code.startsWith(term) ||
@@ -695,7 +694,7 @@
                         
                         const sup = suppliersData.find(s => formatCode3(s.code) === dCode); 
                         sName = sup ? cleanCompanyName(sup.name) : `미등록(${dCode})`; 
-                        retBadge = returnBadgeHtml(sup, item);
+                        retBadge = returnBadgeHtml(sup);
                         
                         const mgr = managersData.find(m => formatCode3(m.code) === dCode); 
                         if (mgr) {
