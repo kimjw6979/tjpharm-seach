@@ -45,6 +45,28 @@
             box-sizing: border-box;
         }
 
+        /* 🐿️ [웰컴 화면] 그라데이션 스플래시 */
+        #welcome-splash {
+            position: fixed; inset: 0; z-index: 999999;
+            background: linear-gradient(160deg, #FEF3C7 0%, #ECFDF5 50%, #EFF6FF 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+            cursor: pointer;
+        }
+        #welcome-splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+        .splash-img-wrap {
+            width: 240px; max-width: 65vw; border-radius: 28px; overflow: hidden;
+            box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.25);
+            position: relative;
+        }
+        .splash-img-wrap img { width: 100%; display: block; }
+        .splash-img-wrap::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(239, 246, 255, 0.85) 0%, transparent 32%);
+        }
+        .splash-title { margin-top: 18px; font-size: 1.35rem; font-weight: 800; color: #0F172A; }
+        .splash-sub { margin-top: 4px; font-size: 0.9rem; font-weight: 600; color: #2563EB; }
+
         .header-section {
             text-align: center;
             margin-bottom: 2.5rem;
@@ -95,7 +117,7 @@
 
         .search-input {
             width: 100%; 
-            padding: 1.2rem 1.5rem 1.2rem 3.2rem; 
+            padding: 1.2rem 6.4rem 1.2rem 3.2rem; 
             border: 2px solid #DBEAFE; 
             border-radius: 16px; 
             font-size: 1.15rem; 
@@ -118,6 +140,23 @@
             cursor: not-allowed;
             box-shadow: none;
         }
+
+        /* ❌ 검색어 지우기 버튼 & 최근 검색어 칩 */
+        .clear-btn {
+            position: absolute; right: 58px; top: 50%; transform: translateY(-50%);
+            width: 32px; height: 32px; border: none; border-radius: 50%;
+            background: #E2E8F0; color: #475569; font-size: 0.9rem; font-weight: 800;
+            cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 2;
+        }
+        .clear-btn:hover { background: #CBD5E1; color: #0F172A; }
+        .recent-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+        .recent-label { font-size: 0.78rem; color: #94A3B8; font-weight: 700; margin-right: 2px; }
+        .recent-chip {
+            background: white; border: 1px solid #CBD5E1; color: #334155;
+            padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .recent-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
         
         .notice-box {
             background: #FEF2F2;
@@ -163,7 +202,7 @@
 
         .prod-name { font-size: 1.1rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; }
         .prod-meta { font-size: 0.8rem; color: #94A3B8; margin-bottom: 8px; font-weight: 500; }
-        .prod-info { font-size: 0.9rem; color: var(--primary); font-weight: 700; background: #DBEAFE; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px; }
+        .prod-info { font-size: 0.9rem; color: var(--primary); font-weight: 700; background: #DBEAFE; display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px; flex-wrap: wrap; gap: 4px; }
         
         .footer {
             margin-top: auto;
@@ -171,6 +210,9 @@
             color: #CBD5E1;
             font-size: 0.85rem;
             font-weight: 600;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         ::-webkit-scrollbar { width: 8px; }
@@ -198,10 +240,10 @@
         }
         .recall-btn:hover { background: #FFE4E6; transform: translateY(-1px); }
 
-        /* 🌟 검색기 전용 의약품 성상보기 버튼 스타일 */
         /* 📦 [출고상태] 출고중단 배지 */
         .stop-badge { display: inline-block; background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; font-size: 0.75rem; font-weight: 800; padding: 2px 7px; border-radius: 6px; margin-right: 6px; vertical-align: middle; }
 
+        /* 🌟 검색기 전용 의약품 성상보기 버튼 스타일 */
         .drug-info-btn {
             display: inline-flex; align-items: center; gap: 4px;
             background: #F5F3FF; color: #6D28D9; border: 1px solid #C4B5FD;
@@ -227,7 +269,6 @@
         .update-close:hover { background: #D1FAE5; }
 
         /* 📷 [바코드 검색] */
-        .search-input { padding-right: 4.2rem; }
         .scan-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border: none;
             background: var(--primary-light); color: var(--primary); border-radius: 12px; font-size: 1.3rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center; z-index: 2; }
@@ -236,14 +277,12 @@
         .scan-box { background: white; border-radius: 18px; width: 100%; max-width: 440px; padding: 16px; box-sizing: border-box; text-align: center; }
         .scan-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 1.05rem; color: #1E293B; }
         .scan-close { border: none; background: #CBD5E1; color: white; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .scan-reader { width: 100%; min-height: 220px; background: #0F172A; border-radius: 12px; overflow: hidden; }
-        .scan-reader { position: relative; }
+        .scan-reader { width: 100%; min-height: 220px; background: #0F172A; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; }
         .scan-reader video { width: 100%; height: auto; display: block; }
         .scan-frame { position: absolute; left: 10%; top: 10%; width: 80%; height: 80%; border: 3px solid rgba(255,255,255,0.9); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.25); pointer-events: none; }
         .scan-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
         .scan-ctl { border: 1px solid #CBD5E1; background: white; color: #334155; border-radius: 999px; padding: 6px 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit; }
         .scan-ctl.on { background: var(--primary); color: white; border-color: var(--primary); }
-        .scan-reader { cursor: pointer; }
         .scan-status { margin: 10px 0 4px; font-weight: 700; color: var(--primary); font-size: 0.92rem; }
         .scan-tip { margin: 0 0 12px; font-size: 0.82rem; color: #64748B; }
         .scan-photo-btn { display: inline-block; padding: 10px 14px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 0.88rem; font-weight: 700; color: #334155; cursor: pointer; }
@@ -257,6 +296,15 @@
     </style>
 </head>
 <body>
+
+    <!-- 🐿️ 웰컴 스플래시 화면 (클릭하면 바로 닫힘, 1.3초 후 자동 사라짐) -->
+    <div id="welcome-splash" onclick="hideWelcomeSplash()">
+        <div class="splash-img-wrap">
+            <img src="logo.jpg" alt="TJPHARM">
+        </div>
+        <div class="splash-title">티제이팜 담당자 검색기</div>
+        <div class="splash-sub">실제 매입처 · 담당자 · 품절 · 공문 1초 조회</div>
+    </div>
 
     <div class="header-section">
         <h1 class="main-title">🏬티제이팜 담당자 검색기💊</h1>
@@ -274,13 +322,13 @@
         <p class="chips-caption">제품을 검색하면 위 정보도 함께 확인할 수 있어요</p>
         <div style="margin-top: 12px; padding: 0 10px;">
             <div style="display: inline-block; font-size: 0.85rem; color: #1D4ED8; background-color: #DBEAFE; padding: 8px 16px; border-radius: 12px; font-weight: 700; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1); line-height: 1.5; word-break: keep-all;">
-                💡 검색된 [👨‍💼 이름 💬] 버튼을 누르면<br>팀즈 1:1 채팅이 열립니다!
+                💡 검색된 [👨‍💼 이름 💬] 버튼을 누르면<br>제품명이 입력된 팀즈 1:1 채팅이 열립니다!
             </div>
         </div>
     </div>
 
     <div class="search-container">
-        <!-- 📅 [상품색인부 업데이트 알림] 새 업데이트가 있으면 검색 전에 보이고, 확인을 누르면 다음 업데이트 때까지 숨김 -->
+        <!-- 📅 [상품색인부 업데이트 알림] -->
         <div id="update-banner" class="update-banner" style="display:none;">
             <span class="update-badge">NEW</span>
             <span class="update-text">상품색인부가 업데이트되었습니다 <b id="update-banner-date"></b></span>
@@ -288,14 +336,17 @@
         </div>
         <div class="input-wrapper">
             <span class="search-icon">🔍</span>
-            <input type="text" id="search-input" class="search-input" placeholder="제품명 또는 코드 입력 (예: 이모튼)" autocomplete="off" autofocus>
+            <input type="text" id="search-input" class="search-input" placeholder="제품명, 초성(예: ㅇㅁㅌ) 또는 코드 입력" autocomplete="off" autofocus>
+            <button type="button" id="clear-btn" class="clear-btn" onclick="clearSearchInput()" title="검색어 지우기">✕</button>
             <button type="button" class="scan-btn" onclick="openBarcodeScanner()" title="바코드로 검색">📷</button>
             <ul id="search-list" class="autocomplete-list"></ul>
         </div>
+        <!-- 🕘 최근 검색어 칩 -->
+        <div id="recent-wrap" class="recent-wrap" style="display:none;"></div>
         
         <div class="notice-box">
-            <span style="font-size: 1.3rem; margin-top: 2px;">⚠️</span>
-            <div>
+            <span style="font-size: 1.3rem; margin-top: 2px; flex-shrink: 0;">⚠️</span>
+            <div style="word-break: keep-all;">
                 <div style="margin-bottom: 8px;">본 검색기는 <strong>'매입처'</strong> 기준으로 담당자가 매칭됩니다.</div>
                 <div style="color: #7F1D1D; font-size: 0.85rem; line-height: 1.6;">
                     일반의약품 검색 시 전문의약품 담당자가 표시될 수 있으므로,<br>
@@ -330,13 +381,16 @@
         TJPHARM SEARCH SYSTEM
     </div>
 
-    <!-- 🌟 담당자 검색기 전용 공문 & 회수 통합 팝업 모달 -->
+    <!-- 🌟 담당자 검색기 전용 공문 & 회수 & 성상 통합 팝업 모달 -->
     <div id="notice-search-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px);" onclick="closeNoticeSearchPopup()">
         <div style="background:white; padding:24px; border-radius:16px; width:90%; max-width:720px; max-height:90vh; display:flex; flex-direction:column; align-items:center; position:relative; box-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25); overflow-y:auto; box-sizing:border-box;" onclick="event.stopPropagation()">
-            <button onclick="closeNoticeSearchPopup()" style="position:absolute; top:12px; right:12px; width:auto; padding:6px 14px; background:#CBD5E1; color:white; border-radius:6px; font-weight:bold; border:none; cursor:pointer;">닫기 ✖</button>
-            <h3 id="notice-modal-title" style="margin:0 0 15px 0; font-size:1.15rem; color:#1E293B; width:100%; text-align:left; padding-right:70px; box-sizing:border-box;">📢 제약사 공문 내용</h3>
+            <div style="position:absolute; top:12px; right:12px; display:flex; gap:6px;">
+                <button id="notice-copy-btn" onclick="copyModalText()" style="display:none; width:auto; padding:6px 12px; background:#EFF6FF; color:#2563EB; border:1px solid #BFDBFE; border-radius:6px; font-weight:700; cursor:pointer; font-family:inherit;">📋 복사</button>
+                <button onclick="closeNoticeSearchPopup()" style="width:auto; padding:6px 14px; background:#CBD5E1; color:white; border-radius:6px; font-weight:bold; border:none; cursor:pointer; font-family:inherit;">닫기 ✖</button>
+            </div>
+            <h3 id="notice-modal-title" style="margin:0 0 15px 0; font-size:1.15rem; color:#1E293B; width:100%; text-align:left; padding-right:135px; box-sizing:border-box;">📢 제약사 공문 내용</h3>
             
-            <!-- 🌟 회수 공문 클릭 시에만 나타나는 상단 요약 텍스트 박스 -->
+            <!-- 🌟 회수/성상 클릭 시 나타나는 상단 요약 텍스트 박스 -->
             <div id="notice-modal-body" style="display:none; background:#FFF1F2; padding:16px 18px; border-radius:12px; border:1px solid #FECDD3; font-size:0.92rem; line-height:1.75; color:#1E293B; margin-bottom:16px; width:100%; box-sizing:border-box; text-align:left;"></div>
 
             <div id="notice-img-guide" style="font-size:0.8rem; color:#2563EB; font-weight:700; margin-bottom:8px; background:#EFF6FF; padding:6px 12px; border-radius:6px; width:100%; box-sizing:border-box; text-align:center;">
@@ -349,17 +403,13 @@
         </div>
     </div>
 
-    <!-- 🌟 [핵심 수정] 세로 압축 없이 큼지막하게 확대되고 스크롤/배율 조절이 가능한 돋보기 모달 🌟 -->
+    <!-- 🌟 이미지 원본 돋보기 모달 -->
     <div id="image-zoom-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:999999; overflow:auto; text-align:center; box-sizing:border-box;" onclick="closeImageZoomPopup()">
-        
-        <!-- 상단 고정 컨트롤 바 (확대/축소/닫기) -->
         <div style="position:fixed; top:16px; right:20px; display:flex; gap:8px; z-index:1000001;" onclick="event.stopPropagation()">
             <button onclick="changeZoomSize(-200)" style="width:auto; padding:8px 14px; background:#1E293B; color:white; border:1px solid #475569; border-radius:8px; font-weight:800; font-size:0.95rem; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3);">🔍- 축소</button>
             <button onclick="changeZoomSize(200)" style="width:auto; padding:8px 14px; background:#2563EB; color:white; border:none; border-radius:8px; font-weight:800; font-size:0.95rem; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3);">🔍+ 더 크게</button>
             <button onclick="closeImageZoomPopup()" style="width:auto; padding:8px 16px; background:#CBD5E1; color:#1E293B; border-radius:8px; font-weight:800; font-size:0.95rem; border:none; cursor:pointer; box-shadow:0 4px 6px rgba(0,0,0,0.3);">닫기 ✖</button>
         </div>
-
-        <!-- 이미지가 쪼그라들지 않도록 기본 1000px 너비로 큼지막하게 표시 -->
         <div style="padding: 70px 20px 40px 20px; display: inline-block;">
             <img id="image-zoom-img" src="" style="width:1000px; max-width:none; height:auto; border-radius:8px; box-shadow:0 0 25px rgba(0,0,0,0.6); cursor:zoom-out; background:white;" onclick="event.stopPropagation(); closeImageZoomPopup();" title="클릭하면 확대 창을 닫습니다">
         </div>
@@ -375,6 +425,72 @@
         let recallEntries = []; 
         let recallCodeSet = new Set(); // 🔄 [회수 일반약] 회수 등록 품목코드
         let currentZoomWidth = 1000;
+
+        // 🐿️ 웰컴 화면 자동 숨김 (1.3초 후 부드럽게 사라짐)
+        function hideWelcomeSplash() {
+            const el = document.getElementById('welcome-splash');
+            if (el) el.classList.add('hide');
+        }
+        setTimeout(hideWelcomeSplash, 1300);
+
+        // 🔤 초성 추출 함수 (예: "이모튼" -> "ㅇㅁㅌ")
+        const CHOSEONG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+        function getChoseong(str) {
+            return String(str || '').split('').map(ch => {
+                const code = ch.charCodeAt(0) - 0xAC00;
+                return (code >= 0 && code <= 11171) ? CHOSEONG[Math.floor(code / 588)] : ch;
+            }).join('');
+        }
+
+        // 🕘 최근 검색어 (최대 5개)
+        const RECENT_KEY = 'tjpharm_recent_searches';
+        function saveRecentSearch(term) {
+            const t = String(term || '').trim();
+            if (!t) return;
+            try {
+                let arr = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+                arr = [t, ...arr.filter(x => x !== t)].slice(0, 5);
+                localStorage.setItem(RECENT_KEY, JSON.stringify(arr));
+                renderRecentSearches();
+            } catch (e) {}
+        }
+        function renderRecentSearches() {
+            const wrap = document.getElementById('recent-wrap');
+            if (!wrap) return;
+            try {
+                const arr = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+                if (arr.length === 0) { wrap.style.display = 'none'; return; }
+                wrap.innerHTML = '<span class="recent-label">최근:</span>' +
+                    arr.map(t => `<button type="button" class="recent-chip" onclick="applyRecentSearch('${t.replace(/'/g, "\\'")}')">${t}</button>`).join('');
+                wrap.style.display = 'flex';
+            } catch (e) { wrap.style.display = 'none'; }
+        }
+        window.applyRecentSearch = function(term) {
+            const input = document.getElementById('search-input');
+            input.value = term;
+            renderSearchResults();
+            input.focus();
+        };
+        window.clearSearchInput = function() {
+            const input = document.getElementById('search-input');
+            input.value = '';
+            document.getElementById('clear-btn').style.display = 'none';
+            document.getElementById('search-list').style.display = 'none';
+            input.focus();
+        };
+        renderRecentSearches();
+
+        // 📋 모달 내용 원클릭 복사
+        window.currentModalCopyText = "";
+        window.copyModalText = function() {
+            if (!window.currentModalCopyText) return;
+            navigator.clipboard.writeText(window.currentModalCopyText).then(() => {
+                const btn = document.getElementById('notice-copy-btn');
+                const orig = btn.innerText;
+                btn.innerText = '✅ 복사됨!';
+                setTimeout(() => { btn.innerText = orig; }, 1500);
+            });
+        };
 
         const isTrue = (val) => val === 1 || val === true || val === 'true';
 
@@ -406,8 +522,11 @@
 
         let isDataLoaded = false;
 
-        // ↩️ [반품여부] 매입처색인부 Agub(완포장) / Gub(소분) → 배지
-        function returnBadgeHtml(sup) {
+        // ↩️ [반품여부] 품목 반품불가(no_return) 최우선 → 매입처색인부 Agub(완포장) / Gub(소분)
+        function returnBadgeHtml(sup, prod) {
+            if (prod && String(prod.no_return || '').toUpperCase() === 'Y') {
+                return ` <span class="ret-badge no" title="상품색인부 기준 반품불가 품목">🚫 품목 반품불가</span>`;
+            }
             if (!sup) return '';
             const f = String(sup.ret_full || '').toUpperCase(), p = String(sup.ret_split || '').toUpperCase();
             if (!f && !p) return '';
@@ -420,7 +539,7 @@
             return ` <span class="ret-badge ${cls}" title="${title}">↩️ ${txt}</span>`;
         }
 
-        // 📅 [상품색인부 업데이트 알림] 아직 확인 안 한 새 업데이트일 때만 배너 표시
+        // 📅 [상품색인부 업데이트 알림]
         const UPDATE_SEEN_KEY = 'tjpharm_products_update_seen';
         let latestProductsUpdated = '';
         function showProductsUpdated(dateStr) {
@@ -440,7 +559,7 @@
             document.getElementById('search-input').focus();
         };
 
-        // 🌟 1. 접속 즉시 브라우저 캐시(localStorage)에서 이전 상품 목록을 0.01초 만에 먼저 불러와 대기 시간 0초 구현!
+        // 🌟 1. 접속 즉시 브라우저 캐시(localStorage)에서 이전 상품 목록 로드
         try {
             const cached = localStorage.getItem('tjpharm_search_cache_v1');
             if (cached) {
@@ -450,11 +569,11 @@
                 managersData = parsed.managers || [];
                 outOfStockData = parsed.outofstock || [];
                 if (productsData.length > 0) isDataLoaded = true;
-                showProductsUpdated(parsed.productsUpdated); // 📅 [상품색인부 날짜]
+                showProductsUpdated(parsed.productsUpdated);
             }
         } catch (e) {}
 
-        // 🌟 2. 서버에서 최신 데이터(공문, 회수, 품절, 최신 상품) 초고속 수신 (mode=search로 불필요한 거래처/주문 데이터 생략)
+        // 🌟 2. 서버에서 최신 데이터 초고속 수신
         async function loadData() {
             const input = document.getElementById('search-input');
             try {
@@ -471,26 +590,24 @@
                     
                     noticeEntries = entries.filter(e => e.boardType === 'notice' && !isTrue(e.del));
                     recallEntries = entries.filter(e => e.boardType === 'recall' && !isTrue(e.del));
-                    recallCodeSet = new Set(recallEntries.flatMap(r => String(r.pCode || '').split(',').map(c => c.trim().padStart(6, '0')))); // 🔄 [회수 일반약]
+                    recallCodeSet = new Set(recallEntries.flatMap(r => String(r.pCode || '').split(',').map(c => c.trim().padStart(6, '0'))));
                     isDataLoaded = true;
-                    showProductsUpdated(data.productsUpdated); // 📅 [상품색인부 날짜]
+                    showProductsUpdated(data.productsUpdated);
 
-                    // 다음 접속 시 0.01초 만에 검색되도록 가벼운 텍스트 데이터만 캐싱
                     try {
                         localStorage.setItem('tjpharm_search_cache_v1', JSON.stringify({
                             products: productsData,
                             suppliers: suppliersData,
                             managers: managersData,
                             outofstock: outOfStockData,
-                            productsUpdated: data.productsUpdated || '' // 📅 [상품색인부 날짜]
+                            productsUpdated: data.productsUpdated || ''
                         }));
                     } catch (cacheErr) {}
                 }
 
-                input.placeholder = "제품명 또는 코드 입력 (예: 이모튼)";
+                input.placeholder = "제품명, 초성(예: ㅇㅁㅌ) 또는 코드 입력";
                 input.disabled = false;
 
-                // 🌟 사용자가 로딩 중에 미리 검색어(예: 이모튼)를 입력해 두었다면 완료 즉시 자동으로 검색 결과창 오픈!
                 if (input.value.trim() !== "") {
                     renderSearchResults();
                 }
@@ -502,11 +619,12 @@
             }
         }
 
-        // 🌟 3. 검색 실행 함수 (입력 시, 포커스 시, 데이터 로딩 완료 시 모두 작동)
+        // 🌟 3. 검색 실행 함수
         function renderSearchResults() {
             const input = document.getElementById('search-input');
             const val = input.value.trim().toLowerCase().replace(/\^/g, ' '); 
             const list = document.getElementById('search-list');
+            document.getElementById('clear-btn').style.display = val ? 'flex' : 'none';
             list.innerHTML = ''; 
 
             if (!val) { 
@@ -514,7 +632,6 @@
                 return; 
             }
 
-            // 아직 최초 데이터를 서버에서 받아오는 중일 때 안내 표시
             if (!isDataLoaded || productsData.length === 0) {
                 list.innerHTML = '<li style="text-align:center; color:#2563EB; font-weight:700; padding:20px;">⏳ 최신 의약품 데이터를 불러오는 중입니다... (완료 즉시 자동 표시됩니다)</li>';
                 list.style.display = 'block';
@@ -525,24 +642,24 @@
 
             let matches = productsData.filter(item => {
                 if (!item) return false;
-                // 🔄 [회수 일반약] 표준코드가 없는 품목은 제약사회수에 등록된 경우에만 검색
                 const hasStd = item.standardCode && String(item.standardCode).trim() !== "";
                 if (!hasStd && !recallCodeSet.has(String(item.code).trim().padStart(6, '0'))) return false;
                 
                 const code = String(item.code || '').toLowerCase();
                 const name = String(item.name || '').toLowerCase();
                 const spec = String(item.spec || '').toLowerCase();
-                const std = String(item.standardCode || '').trim(); // 📷 [바코드 검색]
+                const std = String(item.standardCode || '').trim();
+                const nameCho = getChoseong(name);
 
                 return searchTerms.every(term => 
                     code.startsWith(term) ||
                     name.includes(term) ||
                     spec.includes(term) ||
+                    (/^[ㄱ-ㅎ]+$/.test(term) && nameCho.includes(term)) ||
                     (/^\d{8,}$/.test(term) && std.startsWith(term))
                 );
             });
 
-            // 📷 [바코드 검색] 13자리 표준코드가 정확히 없으면, 같은 제품의 다른 포장단위(앞 11자리 일치)를 찾아봄
             if (matches.length === 0 && /^\d{13}$/.test(val)) {
                 const prefix = val.slice(0, 11);
                 matches = productsData.filter(item => item && String(item.standardCode || '').trim().startsWith(prefix));
@@ -567,7 +684,6 @@
                 });
             }
 
-            // 📦 [출고상태] 출고중 상품을 먼저, 출고중단 상품은 뒤로 (같은 그룹 안에서는 기존 순서 유지)
             const isStopped = (it) => it && it.active !== undefined && it.active !== null && Number(it.active) === 0;
             matches = matches.filter(it => !isStopped(it)).concat(matches.filter(isStopped));
 
@@ -576,7 +692,7 @@
             if (matches.length > 0) {
                 matches.forEach(item => {
                     let sName = "-"; 
-                    let retBadge = ''; // ↩️ [반품여부]
+                    let retBadge = '';
                     let mNameHtml = "👨‍💼 -"; 
 
                     if (item.seller) { 
@@ -584,7 +700,7 @@
                         
                         const sup = suppliersData.find(s => formatCode3(s.code) === dCode); 
                         sName = sup ? cleanCompanyName(sup.name) : `미등록(${dCode})`; 
-                        retBadge = returnBadgeHtml(sup); // ↩️ [반품여부]
+                        retBadge = returnBadgeHtml(sup, item);
                         
                         const mgr = managersData.find(m => formatCode3(m.code) === dCode); 
                         if (mgr) {
@@ -592,14 +708,17 @@
                             if (match) {
                                 const nameOnly = match[1].trim(); 
                                 const email = match[2].trim(); 
-                                mNameHtml = `<a href="https://teams.microsoft.com/l/chat/0/0?users=${email}" target="_blank" style="color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:white; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">👨‍💼 ${nameOnly} 💬</a>`;
+                                const teamsMsg = encodeURIComponent(`[${item.name} (${item.code})] 관련 문의드립니다.`);
+                                mNameHtml = `<a href="https://teams.microsoft.com/l/chat/0/0?users=${email}&message=${teamsMsg}" target="_blank" style="color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:white; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">👨‍💼 ${nameOnly} 💬</a>`;
                             } else {
                                 mNameHtml = `👨‍💼 ${mgr.name}`;
                             }
                         } else {
                             mNameHtml = `👨‍💼 미등록(${dCode})`;
                         }
-                    } 
+                    } else {
+                        retBadge = returnBadgeHtml(null, item);
+                    }
 
                     const oos = getOOSInfo(item.code);
                     let oosBadgeTitle = "";
@@ -655,8 +774,8 @@
                     const li = document.createElement('li');
                     li.onclick = function(e) {
                         if (e.target.closest('a') || e.target.closest('button')) return;
-                        
                         document.getElementById('search-input').value = item.name;
+                        saveRecentSearch(item.name);
                         list.style.display = 'none';
                     };
 
@@ -677,7 +796,6 @@
 
         const searchInputEl = document.getElementById('search-input');
         searchInputEl.addEventListener('input', renderSearchResults);
-        // 🌟 검색창을 다시 클릭하거나 포커스할 때 검색어가 있으면 즉시 목록 다시 펼치기
         searchInputEl.addEventListener('focus', function() {
             if (this.value.trim() !== "") renderSearchResults();
         });
@@ -693,10 +811,8 @@
             }
         });
 
-        // 🌟 외부 폰트 로딩을 기다리지 않고 HTML이 열리자마자 즉시 데이터 통신 시작!
         loadData();
 
-        // 🌟 성분 문자열 깔끔하게 정리하는 보조 함수
         function cleanIngredient(rawIngr) {
             if (!rawIngr || rawIngr === '데이터 없음' || rawIngr === '-' || rawIngr === '식약처미등록') return '-';
             let parts = rawIngr.split('|');
@@ -705,7 +821,7 @@
             return unique.join(', ');
         }
 
-        // 🌟 [방식 B] 의약품 성상 및 식약처 상세정보 팝업 열기 (미수집 품목은 1초 실시간 연동!)
+        // 🌟 의약품 성상 및 식약처 상세정보 팝업 열기
         window.openDrugInfoPopup = async function(pCode) {
             let prod = productsData.find(p => String(p.code) === String(pCode));
             if (!prod) return;
@@ -715,7 +831,9 @@
                 if (item.seller) {
                     const dCode = formatCode3(item.seller);
                     const sup = suppliersData.find(s => formatCode3(s.code) === dCode);
-                    if (sup) sName = cleanCompanyName(sup.name) + returnBadgeHtml(sup); // ↩️ [반품여부]
+                    if (sup) sName = cleanCompanyName(sup.name) + returnBadgeHtml(sup, item);
+                } else {
+                    sName = "-" + returnBadgeHtml(null, item);
                 }
 
                 const chartTxt = (item.chart && item.chart !== '식약처미등록' && item.chart !== '데이터 없음')
@@ -725,8 +843,11 @@
                 const clsTxt = (item.classification && item.classification !== '기타일반약품') ? item.classification : '-';
                 const refTxt = (item.ref_drug && item.ref_drug !== '데이터 없음') ? item.ref_drug : (isSyncing ? '⏳ 대조약 조회 중...' : '-');
 
-                const stoppedTag = (item.active !== undefined && item.active !== null && Number(item.active) === 0) ? ' [출고중단]' : ''; // 📦 [출고상태]
+                const stoppedTag = (item.active !== undefined && item.active !== null && Number(item.active) === 0) ? ' [출고중단]' : '';
                 document.getElementById('notice-modal-title').innerText = `💊 [의약품 성상정보] ${item.name} ${item.spec || ''}${stoppedTag}`;
+
+                window.currentModalCopyText = `[${item.name} ${item.spec || ''}] (코드: ${item.code})\n성상: ${chartTxt}\n주성분: ${ingrTxt}\n대조약: ${refTxt}`;
+                document.getElementById('notice-copy-btn').style.display = 'inline-block';
 
                 const bodyEl = document.getElementById('notice-modal-body');
                 bodyEl.style.display = 'block';
@@ -778,12 +899,13 @@
             }
         };
 
-        // 1. 일반 제약사공문 팝업 열기 (원본 이미지 즉시 표시 + 혹시 지연 표식이면 단건 로드)
+        // 1. 일반 제약사공문 팝업 열기
         window.openNoticeSearchPopup = async function(id) {
             const notice = noticeEntries.find(n => String(n.id) === String(id));
             if (notice && notice.content) {
                 document.getElementById('notice-modal-title').innerText = `📢 [${notice.vCode || '공문'}] ${notice.vName || '제약사 공문'}`;
                 document.getElementById('notice-modal-body').style.display = 'none';
+                document.getElementById('notice-copy-btn').style.display = 'none';
                 document.getElementById('notice-img-guide').innerText = '🔍 아래 공문 이미지를 클릭하면 글씨가 잘 보이도록 크게 확대됩니다!';
                 document.getElementById('notice-img-guide').style.display = 'block';
                 
@@ -803,7 +925,7 @@
             }
         };
 
-        // 2. 제약사회수 팝업 열기 (원본 이미지 즉시 표시 보장!)
+        // 2. 제약사회수 팝업 열기
         window.openRecallSearchPopup = async function(id) {
             const item = recallEntries.find(r => String(r.id) === String(id));
             if (!item) return;
@@ -815,6 +937,9 @@
             const endDate = item.vName || '-';
 
             document.getElementById('notice-modal-title').innerText = `🚨 [회수] ${sup} ${fullProd} 특정 제조번호 회수 건`;
+
+            window.currentModalCopyText = `[회수] ${sup} ${fullProd}\n제조번호: ${lot}\n회수사유: ${reason}\n회수종료일: ${endDate}`;
+            document.getElementById('notice-copy-btn').style.display = 'inline-block';
 
             const bodyEl = document.getElementById('notice-modal-body');
             bodyEl.style.display = 'block';
@@ -855,12 +980,10 @@
             document.getElementById('notice-search-modal').style.display = 'flex';
         };
 
-        // 공문 팝업 닫기
         window.closeNoticeSearchPopup = function() {
             document.getElementById('notice-search-modal').style.display = 'none';
         };
 
-        // 이미지 원본 돋보기 팝업 열기 (기본 1000px로 큼직하게 오픈)
         window.openImageZoomPopup = function(src) {
             if (!src) return;
             currentZoomWidth = 1000;
@@ -870,22 +993,17 @@
             document.getElementById('image-zoom-modal').style.display = 'block';
         };
 
-        // 확대/축소 버튼 조절 함수
         window.changeZoomSize = function(delta) {
             currentZoomWidth = Math.max(500, Math.min(2400, currentZoomWidth + delta));
             document.getElementById('image-zoom-img').style.width = currentZoomWidth + 'px';
         };
 
-        // 이미지 원본 돋보기 팝업 닫기
         window.closeImageZoomPopup = function() {
             document.getElementById('image-zoom-modal').style.display = 'none';
         };
     
         // =====================================================================
-        // 📷 [바코드 검색 v2] 박스의 바코드(EAN-13) 또는 GS1 2D코드(DataMatrix)를 찍어 표준코드로 검색
-        //  - 인식 엔진: zxing-cpp(WASM). 카메라 원본 해상도 그대로 읽어서 작은 2D 코드도 인식
-        //  - 갤럭시처럼 후면 카메라가 여러 개인 폰은 메인 카메라를 골라 씀 (광각은 가까이 초점이 안 맞음)
-        //  - 고해상도 + 연속 자동초점 + 2배 줌으로 시작, 화면 톡 = 초점 다시 잡기
+        // 📷 [바코드 검색 v2]
         // =====================================================================
         const SCAN_LIB_URL = 'https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.5/dist/iife/reader/index.js';
         const SCAN_FORMATS = ['EAN13', 'DataMatrix', 'Code128'];
@@ -894,7 +1012,7 @@
         let scanStream = null, scanTrack = null, trackCaps = {};
         let scanLoopOn = false, scanHandled = false;
         let rearCameras = [], currentCamIdx = 0;
-        let scanSession = 0; // 창을 닫으면 번호가 바뀌어서, 늦게 켜지는 카메라를 바로 끔
+        let scanSession = 0;
         const scanCanvas = document.createElement('canvas');
         const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -918,7 +1036,6 @@
             return String((10 - (sum % 10)) % 10);
         }
 
-        // 인식된 문자열 → 13자리 표준코드 (EAN-13 그대로 / GS1의 (01) 14자리 GTIN → 13자리)
         function toStandardCode(raw) {
             let s = String(raw || '').replace(/^\][A-Za-z]\d/, '').replace(/[\x00-\x1C\x1E-\x1F]/g, '');
             let gtin14 = null;
@@ -958,7 +1075,6 @@
             return (res && res.length && res[0].isValid !== false) ? res[0].text : null;
         }
 
-        // 실시간 인식: 화면 가운데 영역을 원본 해상도로 잘라서 읽음
         async function scanLoop() {
             const video = document.getElementById('scan-video');
             while (scanLoopOn && !scanHandled) {
@@ -981,7 +1097,6 @@
                 const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
                 let rear = cams.filter(c => /back|rear|environment|후면/i.test(c.label || ''));
                 if (rear.length === 0) rear = cams;
-                // 갤럭시 등 'camera2 0, facing back' 형식이면 번호가 작은 쪽이 보통 메인 카메라
                 const num = c => { const m = String(c.label || '').match(/camera2?\s*(\d+)/i); return m ? Number(m[1]) : 99; };
                 return rear.sort((a, b) => num(a) - num(b));
             } catch (e) { return []; }
@@ -1008,7 +1123,7 @@
             v.srcObject = scanStream;
             await v.play().catch(() => {});
             try { trackCaps = scanTrack.getCapabilities ? scanTrack.getCapabilities() : {}; } catch (e) { trackCaps = {}; }
-            await applyFocusAndZoom(2); // 2배 줌으로 시작 (지원하는 폰만)
+            await applyFocusAndZoom(2);
             scanLoopOn = true;
             scanLoop();
         }
@@ -1037,7 +1152,6 @@
 
         window.setScanZoom = function(z) { applyFocusAndZoom(z); };
 
-        // 화면을 톡 치면 그 위치로 초점 다시 잡기 (지원하는 폰만)
         async function tapToFocus(ev) {
             if (!scanTrack) return;
             const modes = Array.isArray(trackCaps.focusMode) ? trackCaps.focusMode : [];
@@ -1076,7 +1190,7 @@
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no camera api');
                 const libReady = loadScanLib();
-                await startCamera(null);                 // 권한 허용 → 카메라 이름을 읽을 수 있게 됨
+                await startCamera(null);
                 rearCameras = await pickRearCameras();
                 let saved = null;
                 try { saved = localStorage.getItem(CAM_PREF_KEY); } catch (e) {}
@@ -1105,7 +1219,6 @@
             await stopCamera();
         };
 
-        // 사진으로 인식 (실시간 카메라가 막힌 브라우저용)
         window.scanBarcodeFromInput = async function(inputEl) {
             const file = inputEl.files && inputEl.files[0];
             inputEl.value = '';
