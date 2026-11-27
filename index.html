@@ -522,10 +522,7 @@
         let isDataLoaded = false;
 
         // ↩️ [반품여부] 품목 반품불가(no_return) 최우선 → 매입처색인부 Agub(완포장) / Gub(소분)
-        function returnBadgeHtml(sup, prod) {
-            if (prod && String(prod.no_return || '').toUpperCase() === 'Y') {
-                return ` <span class="ret-badge no" title="상품색인부 기준 반품불가 품목">🚫 품목 반품불가</span>`;
-            }
+        function returnBadgeHtml(sup) {
             if (!sup) return '';
             const f = String(sup.ret_full || '').toUpperCase(), p = String(sup.ret_split || '').toUpperCase();
             if (!f && !p) return '';
