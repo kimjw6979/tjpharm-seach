@@ -587,19 +587,9 @@
 
         let isDataLoaded = false;
 
-        // ↩️ [반품여부] 매입처색인부 Agub(완포장) / Gub(소분) → 배지
+        // ↩️ [반품여부] 미사용 (배지 숨김)
         function returnBadgeHtml(sup) {
             return '';
-        }
-            const f = String(sup.ret_full || '').toUpperCase(), p = String(sup.ret_split || '').toUpperCase();
-            if (!f && !p) return '';
-            let cls, txt;
-            if (f === 'Y' && p === 'Y')      { cls = 'ok';   txt = '반품 가능'; }
-            else if (f === 'Y')              { cls = 'part'; txt = '완포장만 반품'; }
-            else if (p === 'Y')              { cls = 'part'; txt = '소분만 반품'; }
-            else                             { cls = 'no';   txt = '반품 불가'; }
-            const title = `완포장 반품: ${f || '-'} / 소분 반품: ${p || '-'}`;
-            return ` <span class="ret-badge ${cls}" title="${title}">↩️ ${txt}</span>`;
         }
 
         // 📅 [상품색인부 업데이트 알림]
