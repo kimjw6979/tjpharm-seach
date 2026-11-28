@@ -144,7 +144,7 @@
 
         .search-input {
             width: 100%; 
-            padding: 1.2rem 6.4rem 1.2rem 3.2rem; 
+            padding: 1.2rem 8.2rem 1.2rem 3.2rem; 
             border: 2px solid #DBEAFE; 
             border-radius: 16px; 
             font-size: 1.15rem; 
@@ -170,9 +170,9 @@
 
         /* ❌ 검색어 지우기 버튼 & 최근 검색어 칩 */
         .clear-btn {
-            position: absolute; right: 58px; top: 50%; transform: translateY(-50%);
-            width: 32px; height: 32px; border: none; border-radius: 50%;
-            background: #E2E8F0; color: #475569; font-size: 0.9rem; font-weight: 800;
+            position: absolute; right: 100px; top: 50%; transform: translateY(-50%);
+            width: 28px; height: 28px; border: none; border-radius: 50%;
+            background: #E2E8F0; color: #475569; font-size: 0.85rem; font-weight: 800;
             cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 2;
         }
         .clear-btn:hover { background: #CBD5E1; color: #0F172A; }
@@ -184,6 +184,25 @@
             cursor: pointer; font-family: inherit; transition: all 0.15s;
         }
         .recent-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+        /* 🎤 [음성 검색] 버튼 및 듣는 중 깜빡임 효과 */
+        .voice-btn {
+            position: absolute; right: 54px; top: 50%; transform: translateY(-50%);
+            width: 40px; height: 40px; border: none;
+            background: var(--primary-light); color: var(--primary);
+            border-radius: 12px; font-size: 1.2rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; z-index: 2;
+            transition: all 0.2s;
+        }
+        .voice-btn:hover { background: #DBEAFE; }
+        .voice-btn.listening {
+            background: #EF4444; color: white;
+            animation: voicePulse 1s infinite;
+        }
+        @keyframes voicePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        }
         
         .notice-box {
             background: #FEF2F2;
@@ -296,8 +315,8 @@
         .update-close:hover { background: #D1FAE5; }
 
         /* 📷 [바코드 검색] */
-        .scan-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border: none;
-            background: var(--primary-light); color: var(--primary); border-radius: 12px; font-size: 1.3rem; cursor: pointer;
+        .scan-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: none;
+            background: var(--primary-light); color: var(--primary); border-radius: 12px; font-size: 1.25rem; cursor: pointer;
             display: flex; align-items: center; justify-content: center; z-index: 2; }
         .scan-btn:hover { background: #DBEAFE; }
         .scan-modal { position: fixed; inset: 0; background: rgba(15,23,42,0.75); z-index: 100000; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
@@ -370,6 +389,7 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="search-input" class="search-input" placeholder="제품명 또는 코드 입력" autocomplete="off" autofocus>
             <button type="button" id="clear-btn" class="clear-btn" onclick="clearSearchInput()" title="검색어 지우기">✕</button>
+            <button type="button" id="voice-btn" class="voice-btn" onclick="toggleVoiceSearch()" title="음성으로 검색">🎤</button>
             <button type="button" class="scan-btn" onclick="openBarcodeScanner()" title="바코드로 검색">📷</button>
             <ul id="search-list" class="autocomplete-list"></ul>
         </div>
@@ -1279,6 +1299,65 @@
             } catch (e) {
                 setScanStatus('사진에서 바코드를 찾지 못했어요. 바코드가 크고 선명하게 나오도록 다시 찍어주세요.', true);
             }
+        };
+
+        // =====================================================================
+        // 🎤 [음성 검색] 브라우저 기본 음성인식 (한국어)
+        // =====================================================================
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isListening = false;
+
+        if (!SpeechRecognition) {
+            const vBtn = document.getElementById('voice-btn');
+            if (vBtn) vBtn.style.display = 'none';
+        }
+
+        window.toggleVoiceSearch = function() {
+            if (!SpeechRecognition) {
+                alert('이 브라우저에서는 음성 검색을 지원하지 않습니다. 크롬이나 사파리에서 열어주세요.');
+                return;
+            }
+            const btn = document.getElementById('voice-btn');
+            const input = document.getElementById('search-input');
+
+            if (isListening && recognition) {
+                recognition.stop();
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ko-KR';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function() {
+                isListening = true;
+                btn.classList.add('listening');
+                input.placeholder = '🎙️ 제품명을 말씀해 주세요...';
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript.replace(/[.?!]/g, '').trim();
+                if (transcript) {
+                    input.value = transcript;
+                    renderSearchResults();
+                }
+            };
+
+            recognition.onerror = function(event) {
+                if (event.error === 'not-allowed') {
+                    alert('마이크 권한이 차단되어 있습니다. 브라우저 설정에서 마이크를 허용해 주세요.');
+                }
+            };
+
+            recognition.onend = function() {
+                isListening = false;
+                btn.classList.remove('listening');
+                input.placeholder = '제품명 또는 코드 입력';
+            };
+
+            recognition.start();
         };
     </script>
 </body>
