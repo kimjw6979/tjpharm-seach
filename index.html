@@ -731,6 +731,19 @@
                 );
             });
 
+            // 🎤 띄어쓰기 무시 재검색 ("타이 레놀" → "타이레놀")
+            if (matches.length === 0 && searchTerms.length > 1) {
+                const joined = val.replace(/\s+/g, '');
+                matches = productsData.filter(item => {
+                    if (!item) return false;
+                    const hasStd = item.standardCode && String(item.standardCode).trim() !== "";
+                    if (!hasStd && !recallCodeSet.has(String(item.code).trim().padStart(6, '0'))) return false;
+                    const n = String(item.name || '').toLowerCase().replace(/\s+/g, '');
+                    const sp = String(item.spec || '').toLowerCase().replace(/\s+/g, '');
+                    return n.includes(joined) || (n + sp).includes(joined);
+                });
+            }
+
             if (matches.length === 0 && /^\d{13}$/.test(val)) {
                 const prefix = val.slice(0, 11);
                 matches = productsData.filter(item => item && String(item.standardCode || '').trim().startsWith(prefix));
@@ -1307,10 +1320,115 @@
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
         let isListening = false;
+        let voiceErrMsg = '';
 
         if (!SpeechRecognition) {
             const vBtn = document.getElementById('voice-btn');
             if (vBtn) vBtn.style.display = 'none';
+        }
+
+        // ---- 음성 결과 다듬기 ----
+        // 말끝 군더더기("검색해 줘", "찾아 주세요" 등) 제거 + 문장부호 제거
+        function cleanSpoken(t) {
+            return String(t || '')
+                .replace(/[.?!,~]/g, ' ')
+                .replace(/\s*(을|를)?\s*(검색\s*(해\s*)?|찾아\s*|보여\s*)(줘|주세요|줄래|봐)?\s*$/, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+        // 단위 표기가 데이터와 다를 수 있으므로 여러 후보를 만들어 실제로 검색되는 것을 고른다
+        function spokenVariants(t) {
+            const base = cleanSpoken(t);
+            const unit = base
+                .replace(/밀리\s*그(램|람)/g, 'mg').replace(/마이크로\s*그(램|람)/g, 'mcg')
+                .replace(/밀리\s*리터|밀리/g, 'ml').replace(/(\d)\s*그(램|람)/g, '$1g')
+                .replace(/(\d)\s*(mg|mcg|ml|g)\b/gi, '$1$2');
+            const noUnit = base.replace(/\d+(\.\d+)?\s*(밀리\s*그(램|람)|마이크로\s*그(램|람)|밀리\s*리터|밀리|그(램|람)|mg|mcg|ml|g)?/gi, ' ').replace(/\s+/g, ' ').trim();
+            return [...new Set([base, unit, base.replace(/\s+/g, ''), unit.replace(/\s+/g, ''), noUnit].filter(v => v && v.length > 0))];
+        }
+        function isSearchable(item) {
+            if (!item) return false;
+            const hasStd = item.standardCode && String(item.standardCode).trim() !== "";
+            return hasStd || recallCodeSet.has(String(item.code).trim().padStart(6, '0'));
+        }
+        function countVoiceMatches(q) {
+            const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+            const joined = terms.join('');
+            let n = 0;
+            for (const item of productsData) {
+                if (!isSearchable(item)) continue;
+                const name = String(item.name || '').toLowerCase();
+                const spec = String(item.spec || '').toLowerCase();
+                const flat = (name + spec).replace(/\s+/g, '');
+                if (terms.every(t => name.includes(t) || spec.includes(t)) || flat.includes(joined)) n++;
+            }
+            return n;
+        }
+
+        // ---- 자모 단위 유사도 (발음이 비슷하게 잘못 인식된 경우 보정) ----
+        const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ', JUNG = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ', JONG = ' ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ';
+        function toJamo(str) {
+            let out = '';
+            for (const ch of str) {
+                const c = ch.charCodeAt(0) - 0xAC00;
+                if (c >= 0 && c < 11172) {
+                    out += CHO[Math.floor(c / 588)] + JUNG[Math.floor((c % 588) / 28)] + (c % 28 ? JONG[c % 28] : '');
+                } else out += ch;
+            }
+            return out;
+        }
+        function editDistance(a, b, limit) {
+            if (Math.abs(a.length - b.length) > limit) return limit + 1;
+            let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+            for (let i = 1; i <= a.length; i++) {
+                const cur = [i];
+                let rowMin = i;
+                for (let j = 1; j <= b.length; j++) {
+                    cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+                    if (cur[j] < rowMin) rowMin = cur[j];
+                }
+                if (rowMin > limit) return limit + 1;
+                prev = cur;
+            }
+            return prev[b.length];
+        }
+        // 제품명 앞부분과 비교해 가장 비슷한 이름 조각을 돌려줌 (없으면 null)
+        function fuzzyProductPrefix(q) {
+            const query = q.replace(/\s+/g, '').toLowerCase();
+            if ([...query].length < 2) return null;
+            const qj = toJamo(query);
+            const limit = Math.max(1, Math.floor(qj.length * 0.25));
+            let best = null, bestDist = limit + 1, bestLen = Infinity;
+            for (const item of productsData) {
+                if (!isSearchable(item)) continue;
+                const flat = String(item.name || '').replace(/\s+/g, '');
+                for (const len of [query.length - 1, query.length, query.length + 1]) {
+                    if (len < 2 || len > flat.length) continue;
+                    const piece = flat.slice(0, len);
+                    const d = editDistance(qj, toJamo(piece.toLowerCase()), limit);
+                    if (d < bestDist || (d === bestDist && flat.length < bestLen)) {
+                        best = piece; bestDist = d; bestLen = flat.length;
+                    }
+                }
+            }
+            return bestDist <= limit ? best : null;
+        }
+
+        // 여러 인식 후보 중 실제 제품이 검색되는 것을 고른다
+        function pickBestQuery(alternatives) {
+            const cleaned = alternatives.map(cleanSpoken).filter(Boolean);
+            if (!cleaned.length) return '';
+            if (!isDataLoaded || productsData.length === 0) return cleaned[0];
+            for (const alt of alternatives) {           // 신뢰도 높은 순
+                for (const v of spokenVariants(alt)) {
+                    if (countVoiceMatches(v) > 0) return v;
+                }
+            }
+            for (const c of cleaned) {                  // 그래도 없으면 발음 유사 보정
+                const fixed = fuzzyProductPrefix(c);
+                if (fixed) return fixed;
+            }
+            return cleaned[0];
         }
 
         window.toggleVoiceSearch = function() {
@@ -1329,32 +1447,49 @@
             recognition = new SpeechRecognition();
             recognition.lang = 'ko-KR';
             recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
+            recognition.continuous = false;
+            recognition.maxAlternatives = 5;   // 후보를 여러 개 받아서 제품 목록과 대조
+            voiceErrMsg = '';
 
             recognition.onstart = function() {
                 isListening = true;
                 btn.classList.add('listening');
-                input.placeholder = '🎙️ 제품명을 말씀해 주세요...';
+                input.value = '';
+                input.placeholder = '🎙️ 제품명을 또박또박 말씀해 주세요...';
             };
 
             recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript.replace(/[.?!]/g, '').trim();
-                if (transcript) {
-                    input.value = transcript;
+                const res = event.results[0];
+                const alts = [];
+                for (let i = 0; i < res.length; i++) alts.push(res[i].transcript);
+                const q = pickBestQuery(alts);
+                if (q) {
+                    input.value = q;
                     renderSearchResults();
                 }
             };
 
             recognition.onerror = function(event) {
-                if (event.error === 'not-allowed') {
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     alert('마이크 권한이 차단되어 있습니다. 브라우저 설정에서 마이크를 허용해 주세요.');
+                } else if (event.error === 'no-speech') {
+                    voiceErrMsg = '🔇 음성이 감지되지 않았어요. 다시 눌러 말씀해 주세요.';
+                } else if (event.error === 'audio-capture') {
+                    voiceErrMsg = '🎤 마이크를 찾을 수 없어요.';
+                } else if (event.error === 'network') {
+                    voiceErrMsg = '📶 네트워크 문제로 인식하지 못했어요.';
                 }
             };
 
             recognition.onend = function() {
                 isListening = false;
                 btn.classList.remove('listening');
-                input.placeholder = '제품명 또는 코드 입력';
+                if (voiceErrMsg) {
+                    input.placeholder = voiceErrMsg;
+                    setTimeout(() => { input.placeholder = '제품명 또는 코드 입력'; }, 3000);
+                } else {
+                    input.placeholder = '제품명 또는 코드 입력';
+                }
             };
 
             recognition.start();
