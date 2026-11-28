@@ -692,6 +692,29 @@
             }
         }
 
+        // 🔤 영문/한글 표기 통일용 검색 키
+        //   hct ↔ 에이치씨티, m ↔ 엠 처럼 제품마다 표기가 달라도 같은 것으로 취급
+        //   (영문 알파벳을 한글 읽기로 바꾸고, 따옴표·띄어쓰기·괄호 등을 제거)
+        const LETTER_KO = {
+            a:'에이', b:'비', c:'씨', d:'디', e:'이', f:'에프', g:'지', h:'에이치', i:'아이',
+            j:'제이', k:'케이', l:'엘', m:'엠', n:'엔', o:'오', p:'피', q:'큐', r:'알', s:'에스',
+            t:'티', u:'유', v:'브이', w:'더블유', x:'엑스', y:'와이', z:'제트'
+        };
+        function searchKey(str) {
+            return String(str || '').toLowerCase()
+                .replace(/[a-z]/g, c => LETTER_KO[c])
+                .replace(/[\s'"‘’“”`´()\[\]{}\-_.,·/]+/g, '')
+                .replace(/에이치시티/g, '에이치씨티');   // 음성인식이 '씨'를 '시'로 적는 경우
+        }
+        function itemKeys(item) {
+            // 제품마다 한 번만 계산해서 저장
+            if (item._nk === undefined) {
+                item._nk = searchKey(item.name);
+                item._sk = searchKey(item.spec);
+            }
+            return item;
+        }
+
         // 🌟 3. 검색 실행 함수
         function renderSearchResults() {
             const input = document.getElementById('search-input');
@@ -723,24 +746,25 @@
                 const spec = String(item.spec || '').toLowerCase();
                 const std = String(item.standardCode || '').trim();
 
+                itemKeys(item);
                 return searchTerms.every(term => 
                     code.startsWith(term) ||
                     name.includes(term) ||
                     spec.includes(term) ||
+                    (searchKey(term) !== '' && (item._nk.includes(searchKey(term)) || item._sk.includes(searchKey(term)))) ||
                     (/^\d{8,}$/.test(term) && std.startsWith(term))
                 );
             });
 
             // 🎤 띄어쓰기 무시 재검색 ("타이 레놀" → "타이레놀")
             if (matches.length === 0 && searchTerms.length > 1) {
-                const joined = val.replace(/\s+/g, '');
+                const joined = searchKey(val);
                 matches = productsData.filter(item => {
                     if (!item) return false;
                     const hasStd = item.standardCode && String(item.standardCode).trim() !== "";
                     if (!hasStd && !recallCodeSet.has(String(item.code).trim().padStart(6, '0'))) return false;
-                    const n = String(item.name || '').toLowerCase().replace(/\s+/g, '');
-                    const sp = String(item.spec || '').toLowerCase().replace(/\s+/g, '');
-                    return n.includes(joined) || (n + sp).includes(joined);
+                    itemKeys(item);
+                    return joined !== '' && (item._nk.includes(joined) || (item._nk + item._sk).includes(joined));
                 });
             }
 
@@ -1352,15 +1376,13 @@
             return hasStd || recallCodeSet.has(String(item.code).trim().padStart(6, '0'));
         }
         function countVoiceMatches(q) {
-            const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
-            const joined = terms.join('');
+            const joined = searchKey(q);
+            if (!joined) return 0;
             let n = 0;
             for (const item of productsData) {
                 if (!isSearchable(item)) continue;
-                const name = String(item.name || '').toLowerCase();
-                const spec = String(item.spec || '').toLowerCase();
-                const flat = (name + spec).replace(/\s+/g, '');
-                if (terms.every(t => name.includes(t) || spec.includes(t)) || flat.includes(joined)) n++;
+                itemKeys(item);
+                if ((item._nk + item._sk).includes(joined)) n++;
             }
             return n;
         }
@@ -1394,18 +1416,18 @@
         }
         // 제품명 앞부분과 비교해 가장 비슷한 이름 조각을 돌려줌 (없으면 null)
         function fuzzyProductPrefix(q) {
-            const query = q.replace(/\s+/g, '').toLowerCase();
+            const query = searchKey(q);
             if ([...query].length < 2) return null;
             const qj = toJamo(query);
             const limit = Math.max(1, Math.floor(qj.length * 0.25));
             let best = null, bestDist = limit + 1, bestLen = Infinity;
             for (const item of productsData) {
                 if (!isSearchable(item)) continue;
-                const flat = String(item.name || '').replace(/\s+/g, '');
+                const flat = itemKeys(item)._nk;
                 for (const len of [query.length - 1, query.length, query.length + 1]) {
                     if (len < 2 || len > flat.length) continue;
                     const piece = flat.slice(0, len);
-                    const d = editDistance(qj, toJamo(piece.toLowerCase()), limit);
+                    const d = editDistance(qj, toJamo(piece), limit);
                     if (d < bestDist || (d === bestDist && flat.length < bestLen)) {
                         best = piece; bestDist = d; bestLen = flat.length;
                     }
